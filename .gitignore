@@ -27,6 +27,8 @@ data/
 *.ckpt
 *.bin
 *.safetensors
+artifacts/
+checkpoints/
 checkpoint-*/
 output/
 output_*/

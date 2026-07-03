@@ -1,0 +1,118 @@
+project:
+  name: DLA_Lab1
+  seed: 42
+  num_classes: 43
+  device: auto
+
+paths:
+  data_root: data
+  artifacts_dir: artifacts
+  checkpoints_dir: checkpoints
+  reports_dir: reports
+
+dataset:
+  image_size: 64
+  val_split: 0.20
+  track_size: 30
+  num_workers: 2
+  pin_memory: true
+
+hardware:
+  # Conservative defaults for NVIDIA GeForce RTX 2050 4 GB.
+  batch_size_feature_extraction: 128
+  batch_size_head_only_original: 128
+  batch_size_finetune_frozen: 128
+  batch_size_finetune_layer4: 64
+  batch_size_resnet50: 32
+  use_amp: true
+  allow_tf32: true
+
+training:
+  epochs: 20
+  patience: 5
+  max_grad_norm: 1.0
+  loss: CrossEntropy
+  optimizer: AdamW
+  learning_rate: 0.0005
+  weight_decay: 0.01
+  scheduler: cosine
+  min_lr: 0.000001
+
+model:
+  name: resnet18
+  weights: DEFAULT
+  freeze_backbone: true
+  unfreeze_layer4: false
+
+svm:
+  kernel: linear
+  C: 1.0
+  cache_size: 2000
+
+wandb:
+  enabled: false
+  project: DLA_Lab1_Pipeline
+  entity: null
+  group: exercise_2_pipeline_consolidation
+  job_type: training
+  mode: online
+
+experiments:
+  feature_svm:
+    description: ResNet-18 feature extractor plus linear SVM baseline.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+    batch_size_key: batch_size_feature_extraction
+
+  finetune_frozen:
+    description: Fine-tune only the final classifier head.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.01
+      loss: CrossEntropy
+    batch_size_key: batch_size_finetune_frozen
+
+  ex1_3_head_only_adam_ce:
+    description: Exercise 1.3 head-only fine-tuning baseline selected from the preliminary screening.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: Adam
+      learning_rate: 0.001
+      weight_decay: 0.0
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  finetune_layer4:
+    description: Fine-tune classifier head and ResNet-18 layer4.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0001
+      weight_decay: 0.01
+      loss: CrossEntropy
+    batch_size_key: batch_size_finetune_layer4
