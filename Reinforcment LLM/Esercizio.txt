@@ -1,0 +1,28 @@
+# Introduzione al DRL
+
+In questo notebook fornisco un semplice esempio di implementazione di un algoritmo di apprendimento per rinforzo profondo (Deep Reinforcement Learning, DRL) con gradiente di policy per risolvere un problema di controllo con spazio di stato continuo e spazio di azione discreto: il celebre ambiente [CartPole](https://gymnasium.farama.org/environments/classic_control/cart_pole/). Dovreste studiare l'implementazione in questo notebook in preparazione al laboratorio di mercoledì prossimo.
+
+Questo notebook deve essere eseguito in un ambiente con almeno i seguenti pacchetti installati (la versione GPU di PyTorch non è obbligatoria):
+
+conda create -n DRL -c conda-forge gymnasium pytorch-gpu matplotlib pygame jupyterlab
+
+Alcune letture di base per iniziare:
+
+1. Utilizzeremo il framework [Gymnasium](https://gymnasium.farama.org/) per tutti i nostri esperimenti. Questo framework fornisce un'interfaccia coerente per un'ampia gamma di ambienti di apprendimento per rinforzo (incluso CartPole). Dovresti familiarizzare con il suo funzionamento, con come vengono specificati gli ambienti, con come crearne delle istanze e con come interagire con essi.
+
+2. [Questo eccellente post del blog](http://karpathy.github.io/2016/05/31/rl/) è un'ottima introduzione ai gradienti di policy, alla loro origine e al loro funzionamento. Dagli un'occhiata e sono sicuro che ti aiuterà a comprendere meglio ciò che accade in questo notebook.
+
+
+# Per vostra considerazione
+
+Ci sono molti aspetti che possono essere migliorati in questo esempio. Ecco alcuni spunti di riflessione:
+
+1. **Ambiente di sviluppo**. Se esiste *un* laboratorio in cui non utilizzate un Jupyter Notebook, *questo dovrebbe essere sicuramente quello*. PyGame (per visualizzare gli episodi nell'ambiente) a volte interagisce molto male con i kernel Python di Jupyter. Considerate l'utilizzo di PyCharm o VS Code.
+
+2. **Registrazione migliore**. Monitorare solo la media mobile dei rendimenti è una metrica di performance piuttosto approssimativa, che *dipende anche dal fattore di sconto $\gamma$*. Pensate a quali statistiche potrebbero essere più appropriate da raccogliere e riportare, e anche a *come raccoglierle e riportarle*. Potreste considerare l'utilizzo di Weights and Biases o Tensorboard per questo scopo.
+
+3. **Checkpointing**. Quando l'addestramento è instabile, può essere una buona idea *salvare* i modelli sia periodicamente (in modo da poter riavviare l'addestramento da un checkpoint specifico) sia per ogni modello *migliore* determinato dalle metriche di performance eseguite.
+
+4. **Esplorazione**. Il modello probabilmente è in overfitting (o forse rimane troppo *plastico*, il che può spiegare la convergenza instabile). La nostra policy è *sempre* stocastica, in quanto campioniamo dalla distribuzione di output. Sarebbe interessante aggiungere un parametro di temperatura alla policy in modo da poter controllare questo comportamento, o anche implementare un campionatore di policy deterministico che selezioni sempre l'azione con la massima probabilità per valutare la qualità della rete di policy appresa.
+
+5. **Fattore di sconto**: Il fattore di sconto (valore predefinito $\gamma = 0,99$) è un iperparametro importante che influisce sulla stabilità dell'addestramento. Prova diversi valori per $\gamma$ e osserva come influenzano l'addestramento. Ti vengono in mente altri modi per stabilizzare l'addestramento?
