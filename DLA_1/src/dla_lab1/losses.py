@@ -11,6 +11,15 @@ class FocalLoss(nn.Module):
 
     E' una loss alternativa alla CrossEntropy, utile da provare quando le
     classi sono sbilanciate o quando il modello ignora esempi difficili.
+
+    Args:
+        alpha: Fattore moltiplicativo della loss.
+        gamma: Intensita' con cui vengono pesati di piu' gli esempi difficili.
+        weights: Pesi opzionali per classe.
+        reduction: Tipo di riduzione finale: `mean`, `sum` o nessuna.
+
+    Returns:
+        Oggetto `nn.Module` usabile come funzione di loss nel training loop.
     """
 
     def __init__(
@@ -20,6 +29,18 @@ class FocalLoss(nn.Module):
         weights: torch.Tensor | None = None,
         reduction: str = "mean",
     ) -> None:
+        """
+        Inizializza i parametri della Focal Loss.
+
+        Args:
+            alpha: Fattore moltiplicativo della loss.
+            gamma: Peso dato agli esempi difficili.
+            weights: Pesi opzionali per classe.
+            reduction: Riduzione finale della loss.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -35,6 +56,13 @@ class FocalLoss(nn.Module):
 
         Riceve i logits del modello e le label corrette, poi restituisce
         una loss media usabile con `backward()`.
+
+        Args:
+            inputs: Logits prodotti dal modello, forma `[batch, num_classes]`.
+            targets: Label corrette, forma `[batch]`.
+
+        Returns:
+            Tensore scalare se `reduction` e' `mean` o `sum`, altrimenti una loss per esempio.
         """
         ce_loss = F.cross_entropy(inputs, targets, reduction="none", weight=self.class_weights)
         pt = torch.exp(-ce_loss)
@@ -53,6 +81,15 @@ def build_loss(name: str, class_weights: torch.Tensor | None = None, device: tor
 
     Nel notebook usiamo soprattutto CrossEntropy, ma la funzione supporta
     anche WeightedCrossEntropy e FocalLoss per gli esperimenti preliminari.
+
+    Args:
+        name: Nome della loss: `CrossEntropy`, `WeightedCrossEntropy` o `FocalLoss`.
+        class_weights: Pesi per classe, richiesti dalle loss pesate.
+        device: Device su cui spostare i pesi.
+        **kwargs: Parametri extra, ad esempio `alpha_focal` e `gamma_focal`.
+
+    Returns:
+        Funzione di loss PyTorch pronta per il training.
     """
     weights = class_weights.to(device) if class_weights is not None and device is not None else class_weights
 

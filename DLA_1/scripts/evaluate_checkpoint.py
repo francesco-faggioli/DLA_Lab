@@ -17,6 +17,15 @@ from dla_lab1.train import resolve_device
 
 
 def parse_args() -> argparse.Namespace:
+    """
+    Legge da riga di comando il checkpoint da valutare.
+
+    Args:
+        Nessun argomento diretto: usa `sys.argv`.
+
+    Returns:
+        Namespace con path del checkpoint e path del file di configurazione.
+    """
     parser = argparse.ArgumentParser(description="Evaluate a trained checkpoint on GTSRB test split.")
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--config", default=ROOT / "config" / "config.yaml")
@@ -24,6 +33,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """
+    Valuta un checkpoint PyTorch sul test set GTSRB.
+
+    Args:
+        Nessun argomento diretto: usa gli argomenti letti da `parse_args()`.
+
+    Returns:
+        Codice di uscita del processo: 0 se la valutazione termina correttamente.
+    """
     args = parse_args()
     config = load_config(args.config)
     device = resolve_device(config["project"].get("device", "auto"))

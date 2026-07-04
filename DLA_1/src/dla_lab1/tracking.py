@@ -17,6 +17,14 @@ def experiment_output_dir(config: dict[str, Any], experiment_name: str, root: st
 
     Nel notebook dell'Exercise 2 la usiamo per salvare history, configurazione
     e summary senza dipendere obbligatoriamente da WandB.
+
+    Args:
+        config: Configurazione dell'esperimento.
+        experiment_name: Nome della run.
+        root: Cartella radice per risolvere `artifacts_dir`.
+
+    Returns:
+        Path della cartella artifact locale della run.
     """
     artifacts_dir = resolve_path(config["paths"]["artifacts_dir"], root)
     return ensure_dir(artifacts_dir / "runs" / experiment_name)
@@ -28,6 +36,12 @@ def history_to_records(history) -> list[dict[str, Any]]:
 
     Accetta sia oggetti `EpochMetrics` sia dizionari, cosi' il salvataggio
     resta semplice anche se cambiamo leggermente il formato interno.
+
+    Args:
+        history: Lista di metriche per epoca.
+
+    Returns:
+        Lista di dizionari serializzabili.
     """
     records: list[dict[str, Any]] = []
     for row in history:
@@ -46,6 +60,12 @@ def history_to_dataframe(history) -> pd.DataFrame:
 
     Il DataFrame e' comodo sia per visualizzare i risultati nel notebook sia
     per salvarli in CSV.
+
+    Args:
+        history: Lista di metriche per epoca.
+
+    Returns:
+        DataFrame Pandas con una riga per epoca.
     """
     return pd.DataFrame(history_to_records(history))
 
@@ -56,6 +76,12 @@ def summarize_history(history) -> dict[str, Any]:
 
     Estrae l'epoca migliore secondo `val_acc` e conserva anche l'ultima epoca
     disponibile, utile per capire se il modello stava ancora migliorando.
+
+    Args:
+        history: Lista di metriche prodotte dal training.
+
+    Returns:
+        Dizionario con migliori metriche di validation e metriche finali.
     """
     frame = history_to_dataframe(history)
     if frame.empty:
@@ -80,6 +106,13 @@ def save_config_snapshot(config: dict[str, Any], output_dir: str | Path) -> Path
 
     Questo rende l'esperimento riproducibile: oltre alle metriche, conserviamo
     anche iperparametri, path e impostazioni hardware.
+
+    Args:
+        config: Configurazione effettiva della run.
+        output_dir: Cartella in cui salvare il file YAML.
+
+    Returns:
+        Path del file `config_used.yaml`.
     """
     path = Path(output_dir) / "config_used.yaml"
     path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
@@ -92,6 +125,13 @@ def save_history_csv(history, output_dir: str | Path) -> Path:
 
     Il CSV permette di ricaricare e confrontare le run senza rieseguire
     il training.
+
+    Args:
+        history: Lista di metriche per epoca.
+        output_dir: Cartella in cui salvare il CSV.
+
+    Returns:
+        Path del file `history.csv`.
     """
     path = Path(output_dir) / "history.csv"
     history_to_dataframe(history).to_csv(path, index=False)
@@ -104,6 +144,13 @@ def save_summary_json(summary: dict[str, Any], output_dir: str | Path) -> Path:
 
     Il file JSON contiene poche metriche chiave ed e' utile per costruire
     tabelle comparative tra esperimenti.
+
+    Args:
+        summary: Dizionario di metriche riassuntive.
+        output_dir: Cartella in cui salvare il JSON.
+
+    Returns:
+        Path del file `summary.json`.
     """
     path = Path(output_dir) / "summary.json"
     path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -121,6 +168,15 @@ def save_run_artifacts(
 
     Restituisce percorsi e metriche riassuntive, cosi' il notebook puo'
     mostrarli in modo esplicito.
+
+    Args:
+        config: Configurazione usata dalla run.
+        experiment_name: Nome dell'esperimento.
+        history: Metriche per epoca.
+        root: Cartella radice del progetto.
+
+    Returns:
+        Dizionario con path degli artifact locali e summary della run.
     """
     output_dir = experiment_output_dir(config, experiment_name, root=root)
     summary = summarize_history(history)
@@ -139,6 +195,12 @@ def wandb_is_available() -> bool:
 
     Il notebook usa questa funzione per spiegare se il logging online puo'
     essere attivato senza installare altre librerie.
+
+    Args:
+        Nessun argomento.
+
+    Returns:
+        True se il pacchetto `wandb` e' importabile, altrimenti False.
     """
     try:
         import wandb  # noqa: F401
@@ -153,6 +215,12 @@ def init_wandb_run(config: dict[str, Any]):
 
     Non contiene API key: l'utente deve aver gia' fatto `wandb login` oppure
     impostare la chiave tramite variabile d'ambiente.
+
+    Args:
+        config: Configurazione della run, inclusa la sezione `wandb`.
+
+    Returns:
+        Oggetto run WandB se abilitato, altrimenti None.
     """
     wandb_cfg = config.get("wandb", {})
     training_cfg = config.get("training", {})
@@ -185,6 +253,13 @@ def log_epoch_to_wandb(run, metrics: dict[str, Any]) -> None:
 
     Se `run` e' `None` non fa nulla, quindi il training resta identico anche
     quando WandB e' disattivato.
+
+    Args:
+        run: Oggetto run WandB oppure None.
+        metrics: Dizionario di metriche da registrare.
+
+    Returns:
+        None.
     """
     if run is not None:
         run.log(metrics)
@@ -196,6 +271,14 @@ def log_checkpoint_to_wandb(run, checkpoint_path: str | Path, artifact_name: str
 
     Lo usiamo solo quando WandB e' attivo: oltre alle metriche per epoca,
     resta disponibile anche il file `.pt` del modello migliore.
+
+    Args:
+        run: Oggetto run WandB oppure None.
+        checkpoint_path: File checkpoint da caricare come artifact.
+        artifact_name: Nome dell'artifact su WandB.
+
+    Returns:
+        None.
     """
     if run is None:
         return
@@ -216,6 +299,12 @@ def finish_wandb_run(run) -> None:
     Serve a chiudere correttamente una run WandB.
 
     E' separata dal training loop per mantenere opzionale il logging online.
+
+    Args:
+        run: Oggetto run WandB oppure None.
+
+    Returns:
+        None.
     """
     if run is not None:
         run.finish()

@@ -11,6 +11,13 @@ def plot_class_distribution(labels, title: str = "Class distribution"):
     Serve a disegnare la distribuzione delle classi.
 
     Nel primo notebook lo usiamo per rendere visibile lo sbilanciamento.
+
+    Args:
+        labels: Sequenza di label intere.
+        title: Titolo del grafico.
+
+    Returns:
+        Coppia `(fig, ax)` di Matplotlib.
     """
     counts = np.bincount(np.asarray(labels, dtype=int))
     fig, ax = plt.subplots(figsize=(12, 4))
@@ -27,6 +34,12 @@ def plot_training_history(history_frame):
     Serve a disegnare loss e accuracy di train/validation.
 
     Sara' utile nella parte di fine-tuning.
+
+    Args:
+        history_frame: DataFrame con colonne epoch, train/val loss e train/val accuracy.
+
+    Returns:
+        Coppia `(fig, axes)` di Matplotlib.
     """
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].plot(history_frame["epoch"], history_frame["train_loss"], label="train")
@@ -48,6 +61,13 @@ def plot_confusion_matrix(cm, title: str = "Confusion matrix"):
     Serve a visualizzare una matrice di confusione.
 
     La useremo quando confronteremo gli errori del modello sulle varie classi.
+
+    Args:
+        cm: Matrice di confusione.
+        title: Titolo del grafico.
+
+    Returns:
+        Coppia `(fig, ax)` di Matplotlib.
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     ConfusionMatrixDisplay(cm).plot(ax=ax, values_format="d", colorbar=False)
@@ -61,6 +81,16 @@ def plot_retrieval_results(query_dataset, gallery_dataset, sim_matrix, query_ind
 
     La usiamo nell'Exercise 3.2 solo come controllo qualitativo: il colore verde
     indica un recupero della stessa classe, il rosso un recupero errato.
+
+    Args:
+        query_dataset: Dataset da cui prendere l'immagine query.
+        gallery_dataset: Dataset usato come gallery retrieval.
+        sim_matrix: Matrice di similarita' query-gallery.
+        query_index: Indice della query da visualizzare.
+        k: Numero di immagini recuperate da mostrare.
+
+    Returns:
+        Coppia `(fig, axes)` di Matplotlib.
     """
     query_img, query_label = query_dataset[query_index]
     topk_scores, topk_indices = torch.topk(sim_matrix[query_index], k=k)

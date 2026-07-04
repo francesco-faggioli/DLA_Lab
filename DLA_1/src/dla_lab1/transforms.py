@@ -14,6 +14,14 @@ def build_transforms(image_size: int = 64, train: bool = False, augmentation: st
 
     Per la baseline usa resize, conversione a tensore e normalizzazione ImageNet,
     cioe' le trasformazioni coerenti con una ResNet pre-addestrata.
+
+    Args:
+        image_size: Dimensione finale quadrata delle immagini.
+        train: Se True, abilita eventuali augmentation per il training.
+        augmentation: Tipo di augmentation: `none`, `aggressive`, `conservative` o `spatial`.
+
+    Returns:
+        Composizione torchvision di trasformazioni da applicare alle immagini.
     """
     resize_size = image_size + 6 if train and augmentation in {"aggressive", "conservative", "spatial"} else image_size
     steps = [

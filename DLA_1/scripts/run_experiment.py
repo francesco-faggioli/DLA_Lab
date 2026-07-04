@@ -12,6 +12,15 @@ from dla_lab1.experiments import run_feature_svm, run_finetuning
 
 
 def parse_args() -> argparse.Namespace:
+    """
+    Legge gli argomenti da riga di comando per scegliere l'esperimento.
+
+    Args:
+        Nessun argomento diretto: usa `sys.argv`.
+
+    Returns:
+        Namespace con nome esperimento e path del file di configurazione.
+    """
     parser = argparse.ArgumentParser(description="Run a DLA Lab 1 experiment.")
     parser.add_argument(
         "experiment",
@@ -33,6 +42,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """
+    Esegue una run definita in `config.yaml`.
+
+    Args:
+        Nessun argomento diretto: usa gli argomenti letti da `parse_args()`.
+
+    Returns:
+        Codice di uscita del processo: 0 se la run termina correttamente.
+    """
     args = parse_args()
     config = load_config(args.config)
 

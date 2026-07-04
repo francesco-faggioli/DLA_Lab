@@ -20,6 +20,13 @@ def batch_size_for(config: dict, batch_size_key: str) -> int:
 
     In questo modo possiamo cambiare batch size in un solo punto, adattandolo
     alla memoria disponibile sulla GPU.
+
+    Args:
+        config: Configurazione completa del progetto.
+        batch_size_key: Nome della chiave nella sezione `hardware`.
+
+    Returns:
+        Batch size intero da usare nella run.
     """
     return int(config["hardware"][batch_size_key])
 
@@ -30,6 +37,13 @@ def run_feature_svm(config: dict, root: str | Path = ".") -> dict:
 
     E' la baseline stabile dell'esercizio precedente: estrae feature con
     ResNet-18 congelata e addestra una SVM lineare.
+
+    Args:
+        config: Configurazione caricata da `config.yaml`.
+        root: Cartella radice del progetto, usata per risolvere path relativi.
+
+    Returns:
+        Dizionario con classificatore SVM, label test e predizioni.
     """
     seed_everything(int(config["project"]["seed"]))
     exp = experiment_config(config, "feature_svm")
@@ -79,6 +93,14 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
 
     Costruisce DataLoader, modello, loss, optimizer e training loop partendo
     da `config.yaml`, cosi' il notebook resta piu' pulito e riproducibile.
+
+    Args:
+        config: Configurazione generale del progetto.
+        experiment_name: Nome dell'esperimento definito in `config.yaml`.
+        root: Cartella radice del progetto.
+
+    Returns:
+        Dizionario con modello addestrato, history, DataLoader, device e artifact salvati.
     """
     seed_everything(int(config["project"]["seed"]))
     exp = experiment_config(config, experiment_name)

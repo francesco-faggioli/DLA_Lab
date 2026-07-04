@@ -23,6 +23,17 @@ class EpochMetrics:
 
     La convertiamo poi in tabella per confrontare loss e accuracy di train
     e validation durante il fine-tuning.
+
+    Attributes:
+        epoch: Numero dell'epoca.
+        train_loss: Loss media sul training set.
+        train_acc: Accuracy media sul training set.
+        val_loss: Loss media sulla validation.
+        val_acc: Accuracy media sulla validation.
+        learning_rate: Learning rate usato in quell'epoca.
+
+    Returns:
+        Oggetto dataclass con le metriche di una epoca.
     """
 
     epoch: int
@@ -38,6 +49,12 @@ def resolve_device(device: str = "auto") -> torch.device:
     Serve a scegliere dove eseguire il training.
 
     Con `auto` usa CUDA se disponibile, altrimenti MPS su Mac o CPU.
+
+    Args:
+        device: Nome del device richiesto oppure `auto`.
+
+    Returns:
+        Oggetto `torch.device` da passare a modelli e tensori.
     """
     if device == "auto":
         if torch.cuda.is_available():
@@ -54,6 +71,13 @@ def configure_torch_for_hardware(device: torch.device, allow_tf32: bool = True) 
 
     Su GPU NVIDIA abilita benchmark cuDNN e TF32, che di solito velocizzano
     il training senza cambiare la logica dell'esperimento.
+
+    Args:
+        device: Device selezionato per il training.
+        allow_tf32: Se True, abilita TF32 sulle GPU NVIDIA compatibili.
+
+    Returns:
+        None. Modifica impostazioni globali PyTorch.
     """
     if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
@@ -67,6 +91,16 @@ def build_optimizer(name: str, params, learning_rate: float, weight_decay: float
 
     In questo modo possiamo provare Adam, AdamW o SGD senza riscrivere
     il training loop nel notebook.
+
+    Args:
+        name: Nome dell'optimizer: `Adam`, `AdamW` o `SGD`.
+        params: Parametri addestrabili del modello.
+        learning_rate: Learning rate iniziale.
+        weight_decay: Regolarizzazione L2.
+        momentum: Momentum usato solo da SGD.
+
+    Returns:
+        Optimizer PyTorch configurato.
     """
     if name == "Adam":
         return optim.Adam(params, lr=learning_rate, weight_decay=weight_decay)
@@ -81,8 +115,19 @@ def build_scheduler(name: str, optimizer, epochs: int, step_size: int = 4, gamma
     """
     Serve a modificare il learning rate durante il training.
 
-    `step` replica la logica usata negli esperimenti vecchi, mentre `cosine`
-    e' utile per run piu' lunghe e progressive.
+    `step` riduce il learning rate a intervalli fissi, mentre `cosine`
+    lo riduce in modo piu' progressivo.
+
+    Args:
+        name: Scheduler da usare: `none`, `step` o `cosine`.
+        optimizer: Optimizer a cui applicare lo scheduler.
+        epochs: Numero massimo di epoche.
+        step_size: Ogni quante epoche ridurre il learning rate con `step`.
+        gamma: Fattore moltiplicativo dello scheduler `step`.
+        min_lr: Learning rate minimo per `cosine`.
+
+    Returns:
+        Scheduler PyTorch oppure None.
     """
     if name == "none":
         return None
@@ -107,6 +152,18 @@ def run_epoch(
 
     Se riceve un optimizer aggiorna i pesi del modello; se l'optimizer manca,
     calcola solo loss e accuracy senza modificare il modello.
+
+    Args:
+        model: Modello PyTorch.
+        dataloader: DataLoader da usare per train o valutazione.
+        criterion: Funzione di loss.
+        device: Device su cui spostare batch e modello.
+        optimizer: Optimizer opzionale. Se presente, la funzione allena.
+        scaler: GradScaler opzionale per mixed precision su CUDA.
+        max_grad_norm: Valore massimo per il gradient clipping.
+
+    Returns:
+        Tupla `(loss_media, accuracy_media)` dell'epoca.
     """
     is_train = optimizer is not None
     model.train(is_train)
@@ -163,6 +220,18 @@ def train_model(
 
     Monitora la validation accuracy, salva il modello migliore e applica
     early stopping se la validation non migliora per troppe epoche.
+
+    Args:
+        model: Modello da addestrare.
+        train_loader: DataLoader del training split.
+        val_loader: DataLoader della validation.
+        device: Device scelto per il training.
+        config: Configurazione dell'esperimento.
+        class_weights: Pesi opzionali per le classi.
+        checkpoint_path: File in cui salvare il miglior modello.
+
+    Returns:
+        Tupla `(model, history)`, dove `model` contiene il miglior checkpoint ricaricato.
     """
     training = config.get("training", config)
     model = model.to(device)

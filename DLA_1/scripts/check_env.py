@@ -10,6 +10,15 @@ sys.path.insert(0, str(ROOT / "src"))
 
 
 def main() -> int:
+    """
+    Stampa un riepilogo dell'ambiente Python e del dataset locale.
+
+    Args:
+        Nessun argomento.
+
+    Returns:
+        Codice di uscita del processo: 0 se il controllo termina.
+    """
     print(f"Python: {platform.python_version()}")
     print(f"Project root: {ROOT}")
 
