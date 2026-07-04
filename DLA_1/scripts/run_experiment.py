@@ -15,7 +15,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a DLA Lab 1 experiment.")
     parser.add_argument(
         "experiment",
-        choices=["feature_svm", "ex1_3_head_only_adam_ce", "finetune_frozen", "finetune_layer4"],
+        choices=[
+            "feature_svm",
+            "ex1_3_head_only_adam_ce",
+            "finetune_frozen",
+            "finetune_layer4",
+            "ex3_1_layer4_unfrozen",
+            "ex3_1_head_only_aggressive_aug",
+            "ex3_1_layer4_aggressive_aug",
+            "ex3_1_layer4_conservative_aug",
+            "ex3_1_layer4_spatial_aug",
+        ],
         help="Experiment defined in config/config.yaml.",
     )
     parser.add_argument("--config", default=ROOT / "config" / "config.yaml")

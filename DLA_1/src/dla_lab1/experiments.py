@@ -86,6 +86,7 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
     configure_torch_for_hardware(device, bool(config["hardware"].get("allow_tf32", True)))
 
     batch_size = batch_size_for(config, exp["experiment"].get("batch_size_key", "batch_size_finetune_frozen"))
+    augmentation = exp["experiment"].get("augmentation", "none")
     loaders = build_dataloaders(
         data_root=resolve_path(config["paths"]["data_root"], root),
         image_size=int(config["dataset"]["image_size"]),
@@ -95,7 +96,7 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
         seed=int(config["project"]["seed"]),
         num_workers=int(config["dataset"]["num_workers"]),
         pin_memory=bool(config["dataset"]["pin_memory"]),
-        augmentation="conservative" if experiment_name == "finetune_layer4" else "none",
+        augmentation=augmentation,
     )
 
     model_cfg = exp["model"]

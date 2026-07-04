@@ -190,6 +190,27 @@ def log_epoch_to_wandb(run, metrics: dict[str, Any]) -> None:
         run.log(metrics)
 
 
+def log_checkpoint_to_wandb(run, checkpoint_path: str | Path, artifact_name: str) -> None:
+    """
+    Serve a salvare su WandB il miglior checkpoint della run.
+
+    Lo usiamo solo quando WandB e' attivo: oltre alle metriche per epoca,
+    resta disponibile anche il file `.pt` del modello migliore.
+    """
+    if run is None:
+        return
+
+    path = Path(checkpoint_path)
+    if not path.exists():
+        return
+
+    import wandb
+
+    artifact = wandb.Artifact(name=artifact_name, type="model")
+    artifact.add_file(str(path))
+    run.log_artifact(artifact)
+
+
 def finish_wandb_run(run) -> None:
     """
     Serve a chiudere correttamente una run WandB.

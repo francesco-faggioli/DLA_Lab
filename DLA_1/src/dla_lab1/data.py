@@ -240,3 +240,40 @@ def build_dataloaders(
         "split_summary": split_summary,
         "class_weights": class_weights_from_labels(labels[train_idx], num_classes=43),
     }
+
+
+def build_retrieval_dataloaders(
+    data_root: str | Path,
+    image_size: int,
+    batch_size: int,
+    num_workers: int = 2,
+    pin_memory: bool = True,
+) -> dict[str, DataLoader]:
+    """
+    Serve a creare i DataLoader per Exercise 3.2.
+
+    In retrieval usiamo tutto il training set come gallery e tutto il test set
+    come query. Non facciamo augmentation, perche' non stiamo allenando il
+    modello: vogliamo solo estrarre feature stabili da immagini preprocessate
+    come richiesto dai backbone ImageNet.
+    """
+    transform = build_transforms(image_size=image_size, train=False)
+
+    gallery_set = load_gtsrb(data_root, split="train", transform=transform)
+    query_set = load_gtsrb(data_root, split="test", transform=transform)
+
+    common = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_memory,
+        "shuffle": False,
+        "drop_last": False,
+    }
+    if num_workers > 0:
+        common["persistent_workers"] = True
+        common["prefetch_factor"] = 2
+
+    return {
+        "gallery": DataLoader(gallery_set, **common),
+        "query": DataLoader(query_set, **common),
+    }

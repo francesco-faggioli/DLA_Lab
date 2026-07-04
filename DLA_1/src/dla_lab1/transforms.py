@@ -15,17 +15,25 @@ def build_transforms(image_size: int = 64, train: bool = False, augmentation: st
     Per la baseline usa resize, conversione a tensore e normalizzazione ImageNet,
     cioe' le trasformazioni coerenti con una ResNet pre-addestrata.
     """
+    resize_size = image_size + 6 if train and augmentation in {"aggressive", "conservative", "spatial"} else image_size
     steps = [
-        T.Resize((image_size, image_size), antialias=True),
+        T.Resize((resize_size, resize_size), antialias=True),
         T.ToImage(),
         T.ToDtype(torch.float32, scale=True),
     ]
 
-    if train and augmentation == "conservative":
-        steps.insert(1, T.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05)))
-        steps.insert(2, T.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.10))
+    if train and augmentation == "aggressive":
+        steps.insert(1, T.RandomCrop((image_size, image_size)))
+        steps.insert(2, T.RandomHorizontalFlip(p=0.3))
+        steps.insert(3, T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.15, hue=0.05))
+        steps.insert(4, T.RandomRotation(degrees=10))
+    elif train and augmentation == "conservative":
+        steps.insert(1, T.RandomCrop((image_size, image_size)))
+        steps.insert(2, T.ColorJitter(brightness=0.1, contrast=0.1))
+        steps.insert(3, T.RandomRotation(degrees=3))
     elif train and augmentation == "spatial":
-        steps.insert(1, T.RandomAffine(degrees=12, translate=(0.06, 0.06), scale=(0.92, 1.08)))
+        steps.insert(1, T.RandomCrop((image_size, image_size)))
+        steps.insert(2, T.RandomRotation(degrees=5))
 
     steps.append(T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD))
     return T.Compose(steps)

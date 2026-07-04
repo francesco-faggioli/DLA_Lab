@@ -17,7 +17,12 @@ The original notebooks remain in the project root for traceability. The clean no
 3. `03_improvements_and_retrieval.ipynb`
    - targeted improvements;
    - layer4 unfreezing;
-   - conservative augmentation;
-   - retrieval/NMC experiments if included in the final submission.
+   - conservative augmentation.
+
+4. `03b_retrieval_training_free_classification.ipynb`
+   - retrieval as training-free classification;
+   - gallery/query feature extraction;
+   - similarity metrics and Precision@K;
+   - Nearest-Mean Classifier and mAP summary.
 
 Keep code cells short and delegate reusable logic to `src/dla_lab1`.

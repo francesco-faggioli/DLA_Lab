@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from sklearn.metrics import ConfusionMatrixDisplay
 
 
@@ -52,3 +53,35 @@ def plot_confusion_matrix(cm, title: str = "Confusion matrix"):
     ConfusionMatrixDisplay(cm).plot(ax=ax, values_format="d", colorbar=False)
     ax.set_title(title)
     return fig, ax
+
+
+def plot_retrieval_results(query_dataset, gallery_dataset, sim_matrix, query_index: int, k: int = 5):
+    """
+    Serve a visualizzare una query e le K immagini piu' simili della gallery.
+
+    La usiamo nell'Exercise 3.2 solo come controllo qualitativo: il colore verde
+    indica un recupero della stessa classe, il rosso un recupero errato.
+    """
+    query_img, query_label = query_dataset[query_index]
+    topk_scores, topk_indices = torch.topk(sim_matrix[query_index], k=k)
+
+    fig, axes = plt.subplots(1, k + 1, figsize=(3 * (k + 1), 3))
+    axes[0].imshow(query_img)
+    axes[0].set_title(f"Query\nClass {query_label}", color="blue")
+    axes[0].axis("off")
+
+    for position in range(k):
+        gallery_index = int(topk_indices[position].item())
+        score = float(topk_scores[position].item())
+        retrieved_img, retrieved_label = gallery_dataset[gallery_index]
+        color = "green" if retrieved_label == query_label else "red"
+
+        axes[position + 1].imshow(retrieved_img)
+        axes[position + 1].set_title(
+            f"Top {position + 1}\nClass {retrieved_label}\nSim {score:.2f}",
+            color=color,
+        )
+        axes[position + 1].axis("off")
+
+    fig.tight_layout()
+    return fig, axes

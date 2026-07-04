@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 
 from .losses import build_loss
 from .paths import ensure_dir
-from .tracking import finish_wandb_run, init_wandb_run, log_epoch_to_wandb
+from .tracking import finish_wandb_run, init_wandb_run, log_checkpoint_to_wandb, log_epoch_to_wandb
 
 
 @dataclass
@@ -250,5 +250,12 @@ def train_model(
 
     if Path(checkpoint_path).exists():
         model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        if wandb_run is not None:
+            wandb_run.summary["best_val_acc"] = best_val_acc
+            log_checkpoint_to_wandb(
+                wandb_run,
+                checkpoint_path,
+                artifact_name=f"{config.get('experiment_name', 'model')}-best-checkpoint",
+            )
     finish_wandb_run(wandb_run)
     return model, history

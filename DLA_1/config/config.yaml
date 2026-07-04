@@ -23,6 +23,7 @@ hardware:
   batch_size_head_only_original: 128
   batch_size_finetune_frozen: 128
   batch_size_finetune_layer4: 64
+  batch_size_finetune_layer4_fast: 128
   batch_size_resnet50: 32
   use_amp: true
   allow_tf32: true
@@ -116,3 +117,113 @@ experiments:
       weight_decay: 0.01
       loss: CrossEntropy
     batch_size_key: batch_size_finetune_layer4
+
+  ex3_1_layer4_unfrozen:
+    description: Exercise 3.1 selective fine-tuning with ResNet-18 layer4 and final classifier trainable.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 15
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.1
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: none
+
+  ex3_1_head_only_aggressive_aug:
+    description: Exercise 3.1 head-only baseline with aggressive data augmentation.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 15
+      optimizer: AdamW
+      learning_rate: 0.001
+      weight_decay: 0.01
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: aggressive
+
+  ex3_1_layer4_aggressive_aug:
+    description: Exercise 3.1 layer4 fine-tuning with aggressive augmentation.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 15
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.02
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: aggressive
+
+  ex3_1_layer4_conservative_aug:
+    description: Exercise 3.1 selected final variant with layer4 fine-tuning and conservative color/geometric augmentation.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 10
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.02
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.5
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: conservative
+
+  ex3_1_layer4_spatial_aug:
+    description: Exercise 3.1 layer4 fine-tuning with spatial-only augmentation.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 10
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.02
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.5
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: spatial
