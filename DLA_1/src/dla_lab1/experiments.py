@@ -3,15 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 
 from sklearn.svm import SVC
+from torch.utils.data import DataLoader
 
 from .config import experiment_config
-from .data import build_dataloaders
+from .data import build_dataloaders, load_gtsrb
 from .features import extract_features, save_feature_cache
 from .models import build_classifier, build_feature_extractor
 from .paths import ensure_dir, resolve_path
 from .seed import seed_everything
 from .tracking import save_run_artifacts
 from .train import configure_torch_for_hardware, resolve_device, train_model
+from .transforms import build_transforms
 
 
 def batch_size_for(config: dict, batch_size_key: str) -> int:
@@ -51,21 +53,29 @@ def run_feature_svm(config: dict, root: str | Path = ".") -> dict:
     configure_torch_for_hardware(device, bool(config["hardware"].get("allow_tf32", True)))
 
     batch_size = batch_size_for(config, exp["experiment"].get("batch_size_key", "batch_size_feature_extraction"))
-    loaders = build_dataloaders(
-        data_root=resolve_path(config["paths"]["data_root"], root),
-        image_size=int(config["dataset"]["image_size"]),
-        batch_size=batch_size,
-        val_split=float(config["dataset"]["val_split"]),
-        track_size=int(config["dataset"]["track_size"]),
-        seed=int(config["project"]["seed"]),
-        num_workers=int(config["dataset"]["num_workers"]),
-        pin_memory=bool(config["dataset"]["pin_memory"]),
-    )
+    data_root = resolve_path(config["paths"]["data_root"], root)
+    transform = build_transforms(image_size=int(config["dataset"]["image_size"]), train=False)
+    train_set = load_gtsrb(data_root, split="train", transform=transform)
+    test_set = load_gtsrb(data_root, split="test", transform=transform)
+
+    loader_kwargs = {
+        "batch_size": batch_size,
+        "shuffle": False,
+        "drop_last": False,
+        "num_workers": int(config["dataset"]["num_workers"]),
+        "pin_memory": bool(config["dataset"]["pin_memory"]),
+    }
+    if loader_kwargs["num_workers"] > 0:
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 2
+
+    train_loader = DataLoader(train_set, **loader_kwargs)
+    test_loader = DataLoader(test_set, **loader_kwargs)
 
     model_cfg = exp["model"]
     extractor = build_feature_extractor(model_cfg["name"], model_cfg.get("weights", "DEFAULT"))
-    train_features, train_labels = extract_features(extractor, loaders["train"], device)
-    test_features, test_labels = extract_features(extractor, loaders["test"], device)
+    train_features, train_labels = extract_features(extractor, train_loader, device)
+    test_features, test_labels = extract_features(extractor, test_loader, device)
 
     artifact_dir = ensure_dir(resolve_path(config["paths"]["artifacts_dir"], root) / "features")
     save_feature_cache(

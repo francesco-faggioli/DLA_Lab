@@ -103,6 +103,204 @@ experiments:
       use_amp: true
     batch_size_key: batch_size_head_only_original
 
+  Adam_CrossEntropy:
+    description: Preliminary head-only screening run with Adam and CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: Adam
+      learning_rate: 0.001
+      weight_decay: 0.0
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  AdamW_CrossEntropy:
+    description: Preliminary head-only screening run with AdamW and CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: AdamW
+      learning_rate: 0.001
+      weight_decay: 0.01
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  SGD_CrossEntropy:
+    description: Preliminary head-only screening run with SGD and CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: SGD
+      learning_rate: 0.001
+      momentum: 0.9
+      weight_decay: 0.0
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  Adam_WeightedCrossEntropy:
+    description: Preliminary head-only screening run with Adam and weighted CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: Adam
+      learning_rate: 0.001
+      weight_decay: 0.0
+      loss: WeightedCrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  AdamW_WeightedCrossEntropy:
+    description: Preliminary head-only screening run with AdamW and weighted CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: AdamW
+      learning_rate: 0.001
+      weight_decay: 0.01
+      loss: WeightedCrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  SGD_WeightedCrossEntropy:
+    description: Preliminary head-only screening run with SGD and weighted CrossEntropy.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: SGD
+      learning_rate: 0.001
+      momentum: 0.9
+      weight_decay: 0.0
+      loss: WeightedCrossEntropy
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  Adam_FocalLoss:
+    description: Preliminary head-only screening run with Adam and FocalLoss.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: Adam
+      learning_rate: 0.001
+      weight_decay: 0.0
+      loss: FocalLoss
+      alpha_focal: 1.0
+      gamma_focal: 2.0
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  AdamW_FocalLoss:
+    description: Preliminary head-only screening run with AdamW and FocalLoss.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: AdamW
+      learning_rate: 0.001
+      weight_decay: 0.01
+      loss: FocalLoss
+      alpha_focal: 1.0
+      gamma_focal: 2.0
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
+  SGD_FocalLoss:
+    description: Preliminary head-only screening run with SGD and FocalLoss.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: false
+    training:
+      epochs: 10
+      optimizer: SGD
+      learning_rate: 0.001
+      momentum: 0.9
+      weight_decay: 0.0
+      loss: FocalLoss
+      alpha_focal: 1.0
+      gamma_focal: 2.0
+      scheduler: step
+      step_size: 4
+      gamma_lr: 0.1
+      patience: 5
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_head_only_original
+
   finetune_layer4:
     description: Fine-tune classifier head and ResNet-18 layer4.
     model:
