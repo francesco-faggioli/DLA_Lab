@@ -425,3 +425,117 @@ experiments:
       use_amp: true
     batch_size_key: batch_size_finetune_layer4_fast
     augmentation: spatial
+
+  ex3_1_layer4_no_aug_lr1e4_wd05:
+    description: Exercise 3.1 follow-up run with layer4 fine-tuning, no augmentation, lower LR and stronger weight decay.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0001
+      weight_decay: 0.05
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: none
+
+  ex3_1_layer4_safe_aug_lr1e4_wd05:
+    description: Exercise 3.1 follow-up run with GTSRB-safe augmentation, lower LR and stronger weight decay.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0001
+      weight_decay: 0.05
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: safe
+
+  ex3_1_layer4_safe_aug_lr2e4_wd05:
+    description: Exercise 3.1 follow-up run with GTSRB-safe augmentation, intermediate LR and stronger weight decay.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0002
+      weight_decay: 0.05
+      loss: CrossEntropy
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: safe
+
+  ex3_1_layer4_conservative_ls005:
+    description: Exercise 3.1 follow-up run with conservative augmentation and label smoothing 0.05.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0005
+      weight_decay: 0.02
+      loss: CrossEntropy
+      label_smoothing: 0.05
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: conservative
+
+  ex3_1_layer4_safe_aug_ls005_discriminative:
+    description: Exercise 3.1 follow-up run with safe augmentation, label smoothing and discriminative LR for layer4/fc.
+    model:
+      name: resnet18
+      weights: DEFAULT
+      freeze_backbone: true
+      unfreeze_layer4: true
+    training:
+      epochs: 20
+      optimizer: AdamW
+      learning_rate: 0.0005
+      layer4_lr: 0.0001
+      fc_lr: 0.0005
+      weight_decay: 0.05
+      loss: CrossEntropy
+      label_smoothing: 0.05
+      scheduler: step
+      step_size: 5
+      gamma_lr: 0.5
+      patience: 6
+      max_grad_norm: 1.0
+      use_amp: true
+    batch_size_key: batch_size_finetune_layer4_fast
+    augmentation: safe

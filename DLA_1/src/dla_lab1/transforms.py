@@ -18,12 +18,16 @@ def build_transforms(image_size: int = 64, train: bool = False, augmentation: st
     Args:
         image_size: Dimensione finale quadrata delle immagini.
         train: Se True, abilita eventuali augmentation per il training.
-        augmentation: Tipo di augmentation: `none`, `aggressive`, `conservative` o `spatial`.
+        augmentation: Tipo di augmentation: `none`, `aggressive`, `conservative`, `safe` o `spatial`.
 
     Returns:
         Composizione torchvision di trasformazioni da applicare alle immagini.
     """
-    resize_size = image_size + 6 if train and augmentation in {"aggressive", "conservative", "spatial"} else image_size
+    resize_size = (
+        image_size + 6
+        if train and augmentation in {"aggressive", "conservative", "safe", "spatial"}
+        else image_size
+    )
     steps = [
         T.Resize((resize_size, resize_size), antialias=True),
         T.ToImage(),
@@ -39,6 +43,18 @@ def build_transforms(image_size: int = 64, train: bool = False, augmentation: st
         steps.insert(1, T.RandomCrop((image_size, image_size)))
         steps.insert(2, T.ColorJitter(brightness=0.1, contrast=0.1))
         steps.insert(3, T.RandomRotation(degrees=3))
+    elif train and augmentation == "safe":
+        steps.insert(
+            1,
+            T.RandomAffine(
+                degrees=5,
+                translate=(0.05, 0.05),
+                scale=(0.90, 1.10),
+                interpolation=T.InterpolationMode.BILINEAR,
+            ),
+        )
+        steps.insert(2, T.RandomCrop((image_size, image_size)))
+        steps.insert(3, T.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.05, hue=0.0))
     elif train and augmentation == "spatial":
         steps.insert(1, T.RandomCrop((image_size, image_size)))
         steps.insert(2, T.RandomRotation(degrees=5))

@@ -138,6 +138,49 @@ def build_scheduler(name: str, optimizer, epochs: int, step_size: int = 4, gamma
     raise ValueError(f"Unsupported scheduler {name!r}.")
 
 
+def trainable_parameter_groups(model: nn.Module, training: dict[str, Any]) -> list[dict[str, Any]] | list[nn.Parameter]:
+    """
+    Serve a costruire parametri addestrabili con eventuali learning rate differenziati.
+
+    Nel fine-tuning e' spesso utile aggiornare lentamente il backbone e piu'
+    velocemente la testa finale. Se la configurazione contiene `layer4_lr`
+    o `fc_lr`, questa funzione crea gruppi separati; altrimenti restituisce
+    la lista piatta dei parametri addestrabili.
+
+    Args:
+        model: Modello PyTorch.
+        training: Sezione training della configurazione.
+
+    Returns:
+        Lista di parametri oppure lista di param group per l'optimizer.
+    """
+    default_lr = float(training.get("learning_rate", 5e-4))
+    layer4_lr = training.get("layer4_lr")
+    fc_lr = training.get("fc_lr")
+    if layer4_lr is None and fc_lr is None:
+        return [p for p in model.parameters() if p.requires_grad]
+
+    groups: list[dict[str, Any]] = []
+    seen: set[int] = set()
+
+    if layer4_lr is not None and hasattr(model, "layer4"):
+        params = [p for p in model.layer4.parameters() if p.requires_grad]
+        if params:
+            groups.append({"params": params, "lr": float(layer4_lr), "name": "layer4"})
+            seen.update(id(p) for p in params)
+
+    if fc_lr is not None and hasattr(model, "fc"):
+        params = [p for p in model.fc.parameters() if p.requires_grad]
+        if params:
+            groups.append({"params": params, "lr": float(fc_lr), "name": "fc"})
+            seen.update(id(p) for p in params)
+
+    remaining = [p for p in model.parameters() if p.requires_grad and id(p) not in seen]
+    if remaining:
+        groups.append({"params": remaining, "lr": default_lr, "name": "other"})
+    return groups
+
+
 def run_epoch(
     model: nn.Module,
     dataloader,
@@ -236,7 +279,7 @@ def train_model(
     training = config.get("training", config)
     model = model.to(device)
 
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
+    trainable_params = trainable_parameter_groups(model, training)
     if not trainable_params:
         raise ValueError("No trainable parameters found.")
 
