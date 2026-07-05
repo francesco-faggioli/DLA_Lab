@@ -43,6 +43,11 @@ def parse_args() -> argparse.Namespace:
             "ex3_1_layer4_aggressive_aug",
             "ex3_1_layer4_conservative_aug",
             "ex3_1_layer4_spatial_aug",
+            "ex3_1_layer4_no_aug_lr1e4_wd05",
+            "ex3_1_layer4_safe_aug_lr1e4_wd05",
+            "ex3_1_layer4_safe_aug_lr2e4_wd05",
+            "ex3_1_layer4_conservative_ls005",
+            "ex3_1_layer4_safe_aug_ls005_discriminative",
         ],
         help="Experiment defined in config/config.yaml.",
     )

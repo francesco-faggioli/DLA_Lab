@@ -86,19 +86,20 @@ def build_loss(name: str, class_weights: torch.Tensor | None = None, device: tor
         name: Nome della loss: `CrossEntropy`, `WeightedCrossEntropy` o `FocalLoss`.
         class_weights: Pesi per classe, richiesti dalle loss pesate.
         device: Device su cui spostare i pesi.
-        **kwargs: Parametri extra, ad esempio `alpha_focal` e `gamma_focal`.
+        **kwargs: Parametri extra, ad esempio `label_smoothing`, `alpha_focal` e `gamma_focal`.
 
     Returns:
         Funzione di loss PyTorch pronta per il training.
     """
     weights = class_weights.to(device) if class_weights is not None and device is not None else class_weights
+    label_smoothing = float(kwargs.get("label_smoothing", 0.0))
 
     if name == "CrossEntropy":
-        return nn.CrossEntropyLoss()
+        return nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     if name == "WeightedCrossEntropy":
         if weights is None:
             raise ValueError("WeightedCrossEntropy requires class weights.")
-        return nn.CrossEntropyLoss(weight=weights)
+        return nn.CrossEntropyLoss(weight=weights, label_smoothing=label_smoothing)
     if name == "FocalLoss":
         if weights is None:
             raise ValueError("FocalLoss requires class weights.")
