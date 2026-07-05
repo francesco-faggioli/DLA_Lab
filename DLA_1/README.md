@@ -27,6 +27,8 @@ The refactored project separates reusable Python code from notebooks:
 4. Run `notebooks/03_improvements_and_retrieval.ipynb`.
 5. Keep final interpretation, limitations and AI/tooling disclosure in notebook markdown.
 
+For the final submission, use the clean notebooks in `notebooks/` as the report. `notebooks/Esperimenti_di_prova.ipynb` is kept only as an archive of exploratory runs and should not be treated as the source of the final metrics.
+
 ## Environment Recommendation
 
 The current local `DLA2026` environment is Python 3.14.3. That is newer than the most common PyTorch/scientific-Python teaching stack. If `scripts/check_env.py` reports native import failures for NumPy or pandas, recreate the environment from `environment.yml` with Python 3.12 before running long experiments.

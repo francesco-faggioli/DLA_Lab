@@ -234,6 +234,61 @@ def retrieval_mean_average_precision(
     }
 
 
+def retrieval_mean_average_precision_chunked(
+    query_features: torch.Tensor,
+    gallery_features: torch.Tensor,
+    query_labels: torch.Tensor,
+    gallery_labels: torch.Tensor,
+    num_classes: int = 43,
+    chunk_size: int = 128,
+) -> dict[str, object]:
+    """
+    Serve a calcolare la mAP retrieval senza materializzare tutta la matrice di similarita'.
+
+    Per ogni blocco di query calcola la cosine similarity verso tutta la gallery,
+    poi usa Average Precision considerando rilevanti le immagini della stessa classe.
+    Questo e' piu' adatto a notebook riproducibili, perche' riduce il picco di memoria.
+
+    Args:
+        query_features: Feature delle immagini query.
+        gallery_features: Feature delle immagini gallery.
+        query_labels: Label vere delle query.
+        gallery_labels: Label vere della gallery.
+        num_classes: Numero di classi GTSRB.
+        chunk_size: Numero di query valutate per blocco.
+
+    Returns:
+        Dizionario con `mAP`, `macro_mAP_by_class` e AP media per classe.
+    """
+    query_norm = F.normalize(query_features.float(), dim=1)
+    gallery_norm = F.normalize(gallery_features.float(), dim=1)
+    gallery_np = gallery_labels.detach().cpu().numpy()
+
+    all_aps: list[float] = []
+    ap_by_class: dict[int, list[float]] = {class_id: [] for class_id in range(num_classes)}
+    for start in tqdm(range(0, query_norm.shape[0], chunk_size), desc="mAP", leave=False):
+        end = min(start + chunk_size, query_norm.shape[0])
+        scores = (query_norm[start:end] @ gallery_norm.T).detach().cpu().numpy()
+        labels = query_labels[start:end].detach().cpu().numpy()
+
+        for row_idx, class_id in enumerate(labels):
+            relevant = (gallery_np == class_id).astype(int)
+            ap = float(average_precision_score(relevant, scores[row_idx]))
+            all_aps.append(ap)
+            ap_by_class[int(class_id)].append(ap)
+
+    per_class_ap = {
+        class_id: float(np.mean(values)) if values else float("nan")
+        for class_id, values in ap_by_class.items()
+    }
+    valid_scores = [score for score in per_class_ap.values() if not np.isnan(score)]
+    return {
+        "mAP": float(np.mean(all_aps)),
+        "macro_mAP_by_class": float(np.mean(valid_scores)),
+        "per_class_ap": per_class_ap,
+    }
+
+
 def class_feature_centroids(
     features: torch.Tensor,
     labels: torch.Tensor,

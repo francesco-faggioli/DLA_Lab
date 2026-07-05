@@ -9,7 +9,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from dla_lab1.config import load_config
+from dla_lab1.config import experiment_config, load_config
 from dla_lab1.data import build_dataloaders
 from dla_lab1.evaluate import classification_metrics, predict
 from dla_lab1.models import build_classifier
@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a trained checkpoint on GTSRB test split.")
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--config", default=ROOT / "config" / "config.yaml")
+    parser.add_argument(
+        "--experiment",
+        default=None,
+        help="Optional experiment name from config.yaml, used to rebuild the matching architecture.",
+    )
     return parser.parse_args()
 
 
@@ -44,6 +49,7 @@ def main() -> int:
     """
     args = parse_args()
     config = load_config(args.config)
+    model_config = experiment_config(config, args.experiment)["model"] if args.experiment else config["model"]
     device = resolve_device(config["project"].get("device", "auto"))
 
     loaders = build_dataloaders(
@@ -56,9 +62,8 @@ def main() -> int:
         num_workers=int(config["dataset"]["num_workers"]),
         pin_memory=bool(config["dataset"]["pin_memory"]),
     )
-    model_cfg = config["model"]
     model = build_classifier(
-        model_name=model_cfg["name"],
+        model_name=model_config["name"],
         num_classes=int(config["project"]["num_classes"]),
         weights=None,
         freeze_backbone=False,
@@ -66,6 +71,7 @@ def main() -> int:
     model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     y_true, y_pred = predict(model, loaders["test"], device)
     metrics = classification_metrics(y_true.numpy(), y_pred.numpy())
+    print(f"Accuracy: {metrics['accuracy']:.4f}")
     print(metrics["classification_report"])
     return 0
 
