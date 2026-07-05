@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
         Namespace con path del checkpoint e path del file di configurazione.
     """
     parser = argparse.ArgumentParser(description="Evaluate a trained checkpoint on GTSRB test split.")
-    parser.add_argument("checkpoint", type=Path)
+    parser.add_argument("checkpoint", type=Path, nargs="?", help="Checkpoint .pt to evaluate.")
     parser.add_argument("--config", default=ROOT / "config" / "config.yaml")
     parser.add_argument(
         "--experiment",
@@ -49,6 +49,9 @@ def main() -> int:
     """
     args = parse_args()
     config = load_config(args.config)
+    if args.checkpoint is None and args.experiment is None:
+        raise ValueError("Provide a checkpoint path or --experiment.")
+    checkpoint = args.checkpoint or (ROOT / "checkpoints" / f"{args.experiment}.pt")
     model_config = experiment_config(config, args.experiment)["model"] if args.experiment else config["model"]
     device = resolve_device(config["project"].get("device", "auto"))
 
@@ -68,7 +71,7 @@ def main() -> int:
         weights=None,
         freeze_backbone=False,
     )
-    model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+    model.load_state_dict(torch.load(checkpoint, map_location=device))
     y_true, y_pred = predict(model, loaders["test"], device)
     metrics = classification_metrics(y_true.numpy(), y_pred.numpy())
     print(f"Accuracy: {metrics['accuracy']:.4f}")
