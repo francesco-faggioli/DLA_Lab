@@ -775,7 +775,7 @@ from dla_lab2.clip_utils import (
     build_text_features,
     build_text_features_ensemble,
     evaluate_adapter,
-    evaluate_zero_shot,
+    evaluate_precomputed_features,
     load_imagenet_labels,
     load_imagenet_sketch,
     load_open_clip_model,
@@ -825,18 +825,29 @@ print(len(sketch_train), len(sketch_val))
 TRAIN_SAMPLES = 5000
 BATCH_SIZE = 64
 
+# Usiamo un sottoinsieme del training split per mantenere il laboratorio gestibile.
+# La validation esterna resta completa, cosi' la valutazione finale e' piu' stabile.
 train_tensor_ds = build_clip_tensor_dataset(sketch_train, preprocess, num_samples=TRAIN_SAMPLES)
 val_tensor_ds = build_clip_tensor_dataset(sketch_val, preprocess, num_samples=None)
 
 train_image_loader = DataLoader(train_tensor_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
 val_image_loader = DataLoader(val_tensor_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
+
+print(f"Full train split examples: {len(sketch_train)}")
+print(f"Train subset examples used: {len(train_tensor_ds)}")
+print(f"External validation examples used: {len(val_tensor_ds)}")
+print(f"Image batch size: {BATCH_SIZE}")
 """
         ),
         md(
             """
 ## 3. Zero-shot baseline e prompt study
 
-Prima valutiamo CLIP senza training. Poi confrontiamo alcuni prompt semplici. Questo e' importante perche' CLIP e' molto sensibile al testo usato come descrizione della classe.
+Prima valutiamo CLIP senza training e confrontiamo alcuni prompt semplici. CLIP e' sensibile al testo usato come descrizione della classe: cambiare prompt puo' cambiare leggermente l'accuracy.
+
+Il dataset e' stato diviso inizialmente in modo standard `80/20`: `40.711` esempi nello split train e `10.178` nello split validation. Per il training dell'adapter usiamo solo `5.000` esempi del train split, scelta dichiarata e riproducibile. La validation esterna rimane completa per avere una stima piu' affidabile del risultato finale.
+
+Best practice computazionale: il visual encoder di CLIP resta congelato, quindi calcoliamo le feature immagine del validation set una sola volta e poi riusiamo quelle feature per tutti i prompt.
 """
         ),
         code(
@@ -849,10 +860,15 @@ prompt_templates = [
     "a line drawing of a {}",
 ]
 
+logit_scale = model.logit_scale.exp().item()
+
+val_feature_ds = precompute_image_features(model, val_image_loader, device)
+val_feature_loader = DataLoader(val_feature_ds, batch_size=256, shuffle=False)
+
 prompt_results = []
 for template in prompt_templates:
     text_features = build_text_features(model, tokenizer, imagenet_class_names, template, device)
-    acc = evaluate_zero_shot(model, val_image_loader, text_features, device)
+    acc = evaluate_precomputed_features(val_feature_loader, text_features, logit_scale, device)
     prompt_results.append({"prompt": template, "accuracy": acc})
 
 prompt_table = pd.DataFrame(prompt_results).sort_values("accuracy", ascending=False)
@@ -861,9 +877,24 @@ prompt_table
         ),
         md(
             """
+Osservazioni attese dalla run:
+
+- confrontare piu' prompt serve a scegliere una formulazione testuale ragionevole prima di addestrare l'adapter;
+- con `prompt ensemble` intendiamo la media delle feature testuali prodotte da piu' prompt per la stessa classe.
+"""
+        ),
+        md(
+            """
 ## 4. CLIP-Adapter
 
-Congeliamo CLIP, precalcoliamo le feature immagine e addestriamo solo un adapter MLP. Questo riduce tempo, memoria e rischio di danneggiare le rappresentazioni zero-shot.
+Congeliamo CLIP e addestriamo solo un adapter MLP sulle feature immagine gia' precalcolate. Questo riduce memoria e rischio di danneggiare le rappresentazioni zero-shot.
+
+Il `bottleneck` e' la dimensione del livello nascosto dell'adapter. Un bottleneck piu' piccolo usa meno parametri e forza una correzione piu' semplice; un bottleneck piu' grande e' piu' flessibile ma puo' overfittare piu' facilmente.
+
+Parametri addestrabili dell'adapter:
+
+- bottleneck 64: `66.113` parametri;
+- bottleneck 128: `131.713` parametri.
 """
         ),
         code(
@@ -874,15 +905,15 @@ adapter_train_ds, adapter_val_ds = split_tensor_dataset(train_feature_ds, train_
 adapter_train_loader = DataLoader(adapter_train_ds, batch_size=256, shuffle=True)
 adapter_val_loader = DataLoader(adapter_val_ds, batch_size=256, shuffle=False)
 
-val_feature_ds = precompute_image_features(model, val_image_loader, device)
-val_feature_loader = DataLoader(val_feature_ds, batch_size=256, shuffle=False)
+print(f"Train feature examples: {len(train_feature_ds)}")
+print(f"Adapter train/validation split: {len(adapter_train_ds)} / {len(adapter_val_ds)}")
+print(f"External validation feature examples: {len(val_feature_ds)}")
 """
         ),
         code(
             """
 base_prompt = prompt_table.iloc[0]["prompt"]
 text_features_base = build_text_features(model, tokenizer, imagenet_class_names, base_prompt, device)
-logit_scale = model.logit_scale.exp().item()
 
 adapter64 = CLIPAdapter(feat_dim=512, bottleneck=64, alpha=0.6)
 history64 = train_clip_adapter(
@@ -913,17 +944,17 @@ history128 = train_clip_adapter(
             """
 ## 5. Valutazione finale
 
-Valutiamo zero-shot, adapter singolo e adapter con prompt ensembling sul validation set esterno ImageNet-Sketch.
+Valutiamo zero-shot, adapter singolo e adapter con prompt ensembling sul validation set esterno ImageNet-Sketch. Usiamo sempre le feature immagine precalcolate, quindi il confronto finale non riesegue inutilmente il visual encoder.
 """
         ),
         code(
             """
-zeroshot_acc = evaluate_zero_shot(model, val_image_loader, text_features_base, device)
+zeroshot_acc = evaluate_precomputed_features(val_feature_loader, text_features_base, logit_scale, device)
 acc64 = evaluate_adapter(adapter64, val_feature_loader, text_features_base, logit_scale, device)
 acc128 = evaluate_adapter(adapter128, val_feature_loader, text_features_base, logit_scale, device)
 
 text_features_ensemble = build_text_features_ensemble(model, tokenizer, imagenet_class_names, prompt_templates, device)
-zs_ensemble = evaluate_zero_shot(model, val_image_loader, text_features_ensemble, device)
+zs_ensemble = evaluate_precomputed_features(val_feature_loader, text_features_ensemble, logit_scale, device)
 acc64_ensemble = evaluate_adapter(adapter64, val_feature_loader, text_features_ensemble, logit_scale, device)
 acc128_ensemble = evaluate_adapter(adapter128, val_feature_loader, text_features_ensemble, logit_scale, device)
 
@@ -942,17 +973,52 @@ results
         ),
         code(
             """
-pd.DataFrame(history64).assign(adapter="bottleneck=64").tail(), pd.DataFrame(history128).assign(adapter="bottleneck=128").tail()
+# Questa tabella serve solo a controllare l'andamento della loss nelle ultime epoche.
+# La scelta finale del modello si basa sulla tabella di accuracy esterna sopra.
+loss_tail = pd.concat(
+    [
+        pd.DataFrame(history64).assign(adapter="bottleneck=64").tail(),
+        pd.DataFrame(history128).assign(adapter="bottleneck=128").tail(),
+    ],
+    ignore_index=True,
+)
+loss_tail
+"""
+        ),
+        md(
+            """
+Osservazioni dalla valutazione finale:
+
+- baseline zero-shot: da confrontare con gli adapter tramite la colonna `gain`;
+- prompt ensemble senza training: puo' migliorare leggermente la baseline, ma non e' garantito che migliori anche gli adapter;
+- se l'ensemble dei prompt non migliora l'adapter, si mantiene il miglior prompt singolo;
+- train loss molto bassa e validation loss piu' alta indicano possibile overfitting, da discutere nelle conclusioni.
 """
         ),
         md(
             """
 ## Conclusioni Exercise 3.2
 
-- ImageNet-Sketch e' adatto per testare domain shift: CLIP parte gia' forte ma non e' perfetto.
-- Il CLIP-Adapter addestra pochi parametri e lascia congelato il backbone. Se migliora, significa che le feature CLIP erano buone ma serviva un piccolo adattamento al dominio sketch.
-- Se l'adapter overfitta, si vede da validation loss crescente: in quel caso si riducono epoche, bottleneck o learning rate.
-- Nel report finale va specificato che la tecnica scelta e' parameter-efficient adapter, non LoRA interna al transformer.
+Tutti i punti richiesti sono stati svolti.
+
+- Abbiamo usato un modello CLIP piccolo e standard: `ViT-B-16-quickgelu` con pesi OpenAI.
+- Abbiamo scelto ImageNet-Sketch, un dataset adatto per testare domain shift perche' contiene schizzi invece di foto naturali.
+- Abbiamo valutato CLIP in zero-shot con piu' prompt.
+- Abbiamo applicato un metodo parameter-efficient: CLIP-Adapter sulle feature immagine, lasciando congelati image encoder e text encoder.
+- Il risultato finale va interpretato come gain rispetto allo zero-shot.
+
+Interpretazione: CLIP parte gia' da una baseline forte su ImageNet-Sketch, ma un piccolo adapter puo' migliorare il dominio sketch senza aggiornare tutto il modello. Se la loss suggerisce overfitting, il risultato resta accettabile quando il miglioramento sulla validation esterna e' misurato, confrontato con la baseline e spiegato.
+
+Best practice adottate:
+
+- split iniziale `80/20` del dataset;
+- uso dichiarato di un sottoinsieme del train split per rendere il laboratorio gestibile;
+- validation esterna completa per il confronto finale;
+- backbone CLIP congelato;
+- feature immagine precalcolate;
+- confronto con zero-shot, prompt singolo e prompt ensemble;
+- reporting del gain rispetto alla baseline;
+- scelta finale basata su accuracy esterna, non solo su train loss.
 """
         ),
     ]

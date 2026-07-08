@@ -269,6 +269,41 @@ def precompute_image_features(model: Any, loader: DataLoader, device: str) -> Te
     return TensorDataset(torch.cat(features, dim=0), torch.cat(labels_all, dim=0))
 
 
+@torch.no_grad()
+def evaluate_precomputed_features(loader: DataLoader, text_features: torch.Tensor, logit_scale: float, device: str) -> float:
+    """
+    Valuta una classificazione zero-shot usando feature immagine gia' calcolate.
+
+    Args:
+        loader: DataLoader di feature `(features, labels)`.
+        text_features: Feature testuali normalizzate delle classi.
+        logit_scale: Scala dei logit del modello CLIP.
+        device: Device PyTorch.
+
+    Returns:
+        Accuracy come float tra 0 e 1.
+
+    Notes:
+        Questa funzione evita di rieseguire `model.encode_image()` quando si
+        confrontano piu' prompt sugli stessi esempi. E' la scelta piu' efficiente
+        per prompt study e confronto finale quando il backbone CLIP resta
+        congelato.
+    """
+    correct = 0
+    total = 0
+    text_features = text_features.to(device)
+
+    for features, labels in tqdm(loader, desc="Feature eval", leave=False):
+        features = features.to(device)
+        labels = labels.to(device)
+        logits = logit_scale * features @ text_features.T
+        predictions = logits.argmax(dim=-1)
+        correct += (predictions == labels).sum().item()
+        total += labels.numel()
+
+    return correct / total
+
+
 def split_tensor_dataset(dataset: TensorDataset, train_fraction: float = 0.9, seed: int = 42) -> tuple[TensorDataset, TensorDataset]:
     """
     Divide un TensorDataset in train e validation.
