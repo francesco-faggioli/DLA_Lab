@@ -1,0 +1,31 @@
+seed: 42
+
+sentiment:
+  dataset_id: cornell-movie-review-data/rotten_tomatoes
+  model_id: distilbert/distilbert-base-uncased
+  max_length: 256
+  batch_size: 32
+  epochs: 3
+  learning_rate: 0.00002
+  weight_decay: 0.01
+
+efficient_sentiment:
+  lora_rank: 8
+  lora_alpha: 16
+  lora_dropout: 0.1
+  lora_learning_rate: 0.001
+  frozen_layers: 4
+
+clip:
+  model_name: ViT-B-16-quickgelu
+  pretrained: openai
+  train_samples: 5000
+  batch_size: 64
+  adapter_epochs: 30
+  adapter_lr: 0.002
+  prompts:
+    - "a sketch of a {}"
+    - "a black and white sketch of a {}"
+    - "a hand-drawn sketch of a {}"
+    - "a pencil drawing of a {}"
+    - "a line drawing of a {}"
