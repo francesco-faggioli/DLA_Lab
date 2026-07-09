@@ -1,0 +1,54 @@
+seed: 2112
+
+environment:
+  cartpole_id: CartPole-v1
+  lunarlander_id: LunarLander-v3
+  lunarlander_kwargs:
+    continuous: false
+    enable_wind: false
+
+reinforce_cartpole:
+  gamma: 0.98
+  lr_policy: 0.0003
+  num_episodes: 1000
+  eval_every: 50
+  eval_episodes: 20
+  entropy_coef: 0.01
+  grad_clip: 1.0
+  solved_threshold: 500.0
+
+value_baseline_cartpole:
+  gamma: 0.98
+  lr_policy: 0.0003
+  lr_value: 0.001
+  num_episodes: 1000
+  eval_every: 50
+  eval_episodes: 20
+  entropy_coef: 0.01
+  grad_clip: 1.0
+  solved_threshold: 500.0
+
+a2c_cartpole:
+  gamma: 0.99
+  lr: 0.0003
+  num_episodes: 800
+  eval_every: 25
+  eval_episodes: 20
+  gae_lambda: 0.95
+  entropy_coef: 0.01
+  grad_clip: 0.5
+  solved_threshold: 475.0
+
+a2c_lunarlander:
+  gamma: 0.995
+  lr: 0.00025
+  total_timesteps: 500000
+  n_steps: 64
+  eval_every: 50
+  eval_episodes: 10
+  gae_lambda: 0.95
+  entropy_coef: 0.005
+  entropy_coef_min: 0.0005
+  reward_scale: 100.0
+  grad_clip: 0.5
+  solved_threshold: 200.0
