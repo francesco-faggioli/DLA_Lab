@@ -12,7 +12,6 @@ REQUIRED_MODULES = [
     "gymnasium",
     "pygame",
     "Box2D",
-    "yaml",
     "ipykernel",
 ]
 
@@ -68,7 +67,7 @@ def main() -> None:
         print()
         print("Missing or failing requirements:", ", ".join(missing))
         print("Suggested conda install:")
-        print("  conda create -n DRL -c conda-forge python=3.12 torch gymnasium[box2d] matplotlib pygame pyyaml jupyterlab jupyter ipykernel")
+        print("  conda create -n DRL -c conda-forge python=3.12 torch gymnasium[box2d] matplotlib pygame jupyterlab jupyter ipykernel")
         raise SystemExit(1)
 
     print()

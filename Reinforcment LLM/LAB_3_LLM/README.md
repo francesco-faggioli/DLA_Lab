@@ -43,12 +43,11 @@ The key dependencies are:
 - Matplotlib;
 - Pygame;
 - JupyterLab/Jupyter;
-- PyYAML.
 
 Suggested conda command:
 
 ```bash
-conda create -n DRL -c conda-forge python=3.12 torch "gymnasium[box2d]" matplotlib pygame pyyaml jupyterlab jupyter ipykernel
+conda create -n DRL -c conda-forge python=3.12 torch "gymnasium[box2d]" matplotlib pygame jupyterlab jupyter ipykernel
 ```
 
 ## External Requirements Checked
@@ -93,6 +92,16 @@ Exercise 1 uses REINFORCE on CartPole and adds periodic evaluation. The required
 Exercise 2 compares standardization of returns with a learned value baseline. The value baseline estimates `V(s)` and the policy update uses `G_t - V(s_t)`.
 
 Exercise 3.1 implements Advantage Actor-Critic (A2C). CartPole is used first as a validation environment because a correct implementation should solve it reliably. LunarLander is then analyzed with the stronger vectorized A2C setup developed during the exploratory work. The final notebook reports both successful and unsuccessful attempts because this is useful evidence for explaining training instability.
+
+The default LunarLander presets in `config/lab3_defaults.yaml` now generate new LAB_3_LLM checkpoints instead of reusing old exploratory checkpoints:
+
+- `separate_current_long`: 1,000,000 environment steps with separate actor/critic heads, RMSprop, `gamma=0.995`, `n_steps=5`, `reward_scale=1.0`.
+- `landing_refine_current_long`: 300,000 additional steps from the current long checkpoint with lower learning rate.
+- `landing_precision_current`: additional low-learning-rate refinement from the current best-train refinement checkpoint, intended to reduce excessive stochasticity near landing.
+
+The short presets remain in the YAML file for quick smoke tests, but they should not be used as the final result because their training budget is much smaller.
+
+Notebook 03 now selects a complete final policy configuration: checkpoint, action-selection mode (`greedy` or `sample`) and temperature. Temperature remains an inference-time parameter; it changes the stochastic sampler through `logits / temperature`, but it does not update model weights. The selected configuration is used for the final evaluation and the visual rollouts.
 
 ## Academic Integrity and AI Disclosure
 
