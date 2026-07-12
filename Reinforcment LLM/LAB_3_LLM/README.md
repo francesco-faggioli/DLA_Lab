@@ -93,15 +93,18 @@ Exercise 2 compares standardization of returns with a learned value baseline. Th
 
 Exercise 3.1 implements Advantage Actor-Critic (A2C). CartPole is used first as a validation environment because a correct implementation should solve it reliably. LunarLander is then analyzed with the stronger vectorized A2C setup developed during the exploratory work. The final notebook reports both successful and unsuccessful attempts because this is useful evidence for explaining training instability.
 
-The default LunarLander presets in `config/lab3_defaults.yaml` now generate new LAB_3_LLM checkpoints instead of reusing old exploratory checkpoints:
+The default LunarLander presets in `config/lab3_defaults.yaml` generate or evaluate LAB_3_LLM checkpoints instead of reusing old exploratory checkpoints:
 
+- `sb3_zoo_raw_current`: 300,000 environment steps from scratch with the RL-Zoo-style A2C hyperparameters, linear learning-rate decay and no extra reward scaling.
 - `separate_current_long`: 1,000,000 environment steps with separate actor/critic heads, RMSprop, `gamma=0.995`, `n_steps=5`, `reward_scale=1.0`.
 - `landing_refine_current_long`: 300,000 additional steps from the current long checkpoint with lower learning rate.
-- `landing_precision_current`: additional low-learning-rate refinement from the current best-train refinement checkpoint, intended to reduce excessive stochasticity near landing.
+- `landing_maskfix_refine_current`: 250,000 additional steps from the current best-train refinement checkpoint after the vectorized GAE mask fix, with zero entropy bonus and conservative learning-rate decay.
 
-The short presets remain in the YAML file for quick smoke tests, but they should not be used as the final result because their training budget is much smaller.
+The short presets remain in the YAML file for quick smoke tests. `landing_precision_current` and the older `landing_stabilize_current` remain available as optional diagnostic runs, but they are no longer default final candidates unless intentionally re-enabled.
 
-Notebook 03 now selects a complete final policy configuration: checkpoint, action-selection mode (`greedy` or `sample`) and temperature. Temperature remains an inference-time parameter; it changes the stochastic sampler through `logits / temperature`, but it does not update model weights. The selected configuration is used for the final evaluation and the visual rollouts.
+Notebook 03 now selects a complete final policy configuration: checkpoint, action-selection mode (`greedy` or `sample`) and temperature. Temperature remains an inference-time parameter; it changes the stochastic sampler through `logits / temperature`, but it does not update model weights. The final selection uses `reliability_score = avg_return + 2 * success_rate - 2 * truncation_rate`, because the current policies are not solved yet and a tiny average-return gain should not dominate landing reliability. The selected configuration is used for the final evaluation and the visual rollouts.
+
+The current final LunarLander run selects `a2c_lunarlander_sb3_zoo_raw_current.pt` with stochastic sampling at `T=0.75`. On the saved 200-episode final evaluation it reaches average return about `165.8`, success rate about `56%` and truncation rate `2%`. This does not formally solve LunarLander under the `>= 200` average-return criterion, but it is a clear improvement over the earlier refinement attempts and is suitable to discuss as a satisfactory A2C laboratory result.
 
 ## Academic Integrity and AI Disclosure
 

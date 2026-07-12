@@ -292,6 +292,7 @@ def run_a2c_episode(
     obs, _ = env.reset(seed=seed)
     total_reward = 0.0
     actions: list[int] = []
+    observations = [np.asarray(obs, dtype=np.float32).copy()]
     terminated = False
     truncated = False
 
@@ -310,6 +311,7 @@ def run_a2c_episode(
             obs, reward, terminated, truncated, _ = env.step(action)
             total_reward += float(reward)
             actions.append(action)
+            observations.append(np.asarray(obs, dtype=np.float32).copy())
 
             if terminated or truncated:
                 break
@@ -318,6 +320,7 @@ def run_a2c_episode(
         "return": total_reward,
         "length": len(actions),
         "actions": actions,
+        "final_observation": observations[-1].tolist(),
         "terminated": terminated,
         "truncated": truncated,
     }
@@ -372,11 +375,35 @@ def evaluate_a2c_policy(
     actions = [action for ep in episodes for action in ep["actions"]]
     n_actions = getattr(env.action_space, "n", 0)
     action_freq = None
+    last_quarter_action_freq = None
     if n_actions and actions:
         counts = np.bincount(actions, minlength=n_actions)
         action_freq = counts / counts.sum()
+        last_quarter_actions = [
+            action
+            for ep in episodes
+            for action in ep["actions"][int(0.75 * len(ep["actions"])) :]
+        ]
+        if last_quarter_actions:
+            last_counts = np.bincount(last_quarter_actions, minlength=n_actions)
+            last_quarter_action_freq = last_counts / last_counts.sum()
 
-    return {
+    final_observations = np.array([ep["final_observation"] for ep in episodes], dtype=np.float64)
+    final_diagnostics = {}
+    if final_observations.ndim == 2 and final_observations.shape[1] >= 6:
+        final_diagnostics = {
+            "final_abs_x": float(np.abs(final_observations[:, 0]).mean()),
+            "final_abs_y": float(np.abs(final_observations[:, 1]).mean()),
+            "final_abs_vx": float(np.abs(final_observations[:, 2]).mean()),
+            "final_abs_vy": float(np.abs(final_observations[:, 3]).mean()),
+            "final_abs_angle": float(np.abs(final_observations[:, 4]).mean()),
+            "final_abs_angular_velocity": float(np.abs(final_observations[:, 5]).mean()),
+        }
+        if final_observations.shape[1] >= 8:
+            final_diagnostics["final_left_leg_contact_rate"] = float(final_observations[:, 6].mean() * 100.0)
+            final_diagnostics["final_right_leg_contact_rate"] = float(final_observations[:, 7].mean() * 100.0)
+
+    result = {
         "returns": returns.tolist(),
         "lengths": lengths.tolist(),
         "avg_return": float(returns.mean()),
@@ -388,7 +415,10 @@ def evaluate_a2c_policy(
         "terminated": int(sum(ep["terminated"] for ep in episodes)),
         "truncated": int(sum(ep["truncated"] for ep in episodes)),
         "action_freq": None if action_freq is None else action_freq.tolist(),
+        "last_quarter_action_freq": None if last_quarter_action_freq is None else last_quarter_action_freq.tolist(),
     }
+    result.update(final_diagnostics)
+    return result
 
 
 def train_a2c_single_env(
@@ -564,6 +594,7 @@ def train_a2c_vectorized(
     n_steps: int = 64,
     gamma: float = 0.995,
     lr: float = 2.5e-4,
+    lr_final: float | None = None,
     value_coef: float = 0.5,
     entropy_coef: float = 0.005,
     entropy_coef_min: float = 0.0005,
@@ -589,6 +620,8 @@ def train_a2c_vectorized(
         n_steps: Rollout length per environment before each update.
         gamma: Discount factor.
         lr: Optimizer learning rate.
+        lr_final: Final learning rate for the linear schedule. If None, the
+            schedule keeps the previous 10% floor for backward compatibility.
         value_coef: Weight of the critic loss.
         entropy_coef: Initial entropy bonus coefficient.
         entropy_coef_min: Minimum entropy coefficient after decay.
@@ -615,6 +648,7 @@ def train_a2c_vectorized(
 
     n_envs = vec_env.num_envs
     total_updates = max(1, total_timesteps // (n_envs * n_steps))
+    lr_floor = lr * 0.1 if lr_final is None else float(lr_final)
     optimizer_name = optimizer_name.lower()
     if optimizer_name == "adam":
         optimizer = torch.optim.Adam(net.parameters(), lr=lr)
@@ -658,6 +692,8 @@ def train_a2c_vectorized(
         "total_timesteps": total_timesteps,
         "n_envs": n_envs,
         "n_steps": n_steps,
+        "lr": lr,
+        "lr_final": lr_floor,
         "optimizer_name": optimizer_name,
     }
 
@@ -666,7 +702,7 @@ def train_a2c_vectorized(
 
     for update in range(total_updates):
         progress = update / max(1, total_updates - 1)
-        current_lr = max(lr * 0.1, lr * (1.0 - progress))
+        current_lr = lr_floor + (lr - lr_floor) * (1.0 - progress)
         current_entropy_coef = max(
             entropy_coef_min,
             entropy_coef - (entropy_coef - entropy_coef_min) * progress,
@@ -693,7 +729,7 @@ def train_a2c_vectorized(
             values_list.append(values)
             log_probs_list.append(dist.log_prob(actions))
             entropies_list.append(dist.entropy())
-            masks_list.append(torch.tensor(1.0 - terminated.astype(np.float32), dtype=torch.float32))
+            masks_list.append(torch.tensor(1.0 - dones.astype(np.float32), dtype=torch.float32))
 
             current_returns += rewards
             current_lengths += 1

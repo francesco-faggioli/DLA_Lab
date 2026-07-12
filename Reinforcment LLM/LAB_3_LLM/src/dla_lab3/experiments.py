@@ -135,10 +135,11 @@ def print_lunar_preset_summary(ll_config: dict[str, Any], selected_experiments: 
     print("\nAvailable presets:")
     for name, preset in ll_config["experiments"].items():
         marker = "*" if name in selected_experiments else " "
+        lr_final_text = "" if preset.get("lr_final") is None else f" -> {preset['lr_final']}"
         print(
             f"{marker} {name}: {preset['description']} | "
             f"timesteps={preset['total_timesteps']} | "
-            f"n_envs={preset['n_envs']} | lr={preset['lr']} | "
+            f"n_envs={preset['n_envs']} | lr={preset['lr']}{lr_final_text} | "
             f"reward_scale={preset['reward_scale']}"
         )
 
@@ -227,6 +228,7 @@ def train_lunar_presets(
             n_steps=int(preset["n_steps"]),
             gamma=float(preset["gamma"]),
             lr=float(preset["lr"]),
+            lr_final=None if preset.get("lr_final") is None else float(preset["lr_final"]),
             value_coef=float(preset["value_coef"]),
             entropy_coef=float(preset["entropy_coef"]),
             entropy_coef_min=float(preset["entropy_coef_min"]),
@@ -381,7 +383,20 @@ def evaluate_lunar_checkpoint_candidate(
         "truncated": metrics["truncated"],
         "truncation_rate": 100.0 * metrics["truncated"] / n_eval,
         "action_freq": metrics["action_freq"],
+        "last_quarter_action_freq": metrics.get("last_quarter_action_freq"),
     }
+    for key in [
+        "final_abs_x",
+        "final_abs_y",
+        "final_abs_vx",
+        "final_abs_vy",
+        "final_abs_angle",
+        "final_abs_angular_velocity",
+        "final_left_leg_contact_rate",
+        "final_right_leg_contact_rate",
+    ]:
+        if key in metrics:
+            result[key] = metrics[key]
     return result
 
 
@@ -531,7 +546,7 @@ def run_lunar_temperature_sweep(
 def _policy_selection_key(row: dict[str, Any], metric: str) -> tuple[float, float, float, float, float]:
     """Return a deterministic ordering key for policy configuration selection."""
 
-    primary = float(row[metric])
+    primary = policy_configuration_score(row, metric)
     return (
         primary,
         float(row["avg_return"]),
@@ -539,6 +554,34 @@ def _policy_selection_key(row: dict[str, Any], metric: str) -> tuple[float, floa
         -float(row.get("truncation_rate", 100.0)),
         -float(row["std_return"]),
     )
+
+
+def policy_configuration_score(row: dict[str, Any], metric: str) -> float:
+    """Compute the scalar score used to rank final policy configurations.
+
+    Args:
+        row: Policy-configuration metrics from evaluation.
+        metric: One of the direct metric names or `reliability_score`.
+
+    What it does:
+        Keeps `avg_return` available for the official solved criterion, but
+        adds a reliability-oriented score for unsolved LunarLander runs. The
+        reliability score still rewards average return, while giving extra
+        weight to successful landings and penalizing truncated episodes.
+
+    Outputs:
+        Scalar score used by `select_lunar_policy_configuration`.
+    """
+
+    if metric == "reliability_score":
+        return (
+            float(row["avg_return"])
+            + 2.0 * float(row["success_rate"])
+            - 2.0 * float(row.get("truncation_rate", 0.0))
+        )
+    if metric not in row:
+        raise KeyError(f"Unknown policy-selection metric: {metric}")
+    return float(row[metric])
 
 
 def evaluate_lunar_policy_configurations(
@@ -577,14 +620,24 @@ def evaluate_lunar_policy_configurations(
     )[:top_k]
 
     candidates_by_path: dict[str, dict[str, Any]] = {}
-    for row in top_by_return + top_by_success:
-        candidates_by_path[str(row["path"])] = {
-            "name": row["name"],
-            "source": row["source"],
-            "preset": row.get("preset"),
-            "checkpoint_type": row.get("checkpoint_type"),
-            "path": Path(row["path"]),
-        }
+    for reason, rows in [
+        (f"top {top_k} by average return at T={ll_config['selection_temperature']}", top_by_return),
+        (f"top {top_k} by success rate at T={ll_config['selection_temperature']}", top_by_success),
+    ]:
+        for row in rows:
+            key = str(row["path"])
+            candidate = candidates_by_path.setdefault(
+                key,
+                {
+                    "name": row["name"],
+                    "source": row["source"],
+                    "preset": row.get("preset"),
+                    "checkpoint_type": row.get("checkpoint_type"),
+                    "path": Path(row["path"]),
+                    "candidate_reasons": [],
+                },
+            )
+            candidate["candidate_reasons"].append(reason)
 
     results: list[dict[str, Any]] = []
     n_eval = int(ll_config.get("policy_selection_episodes", ll_config["selection_episodes"]))
@@ -592,10 +645,24 @@ def evaluate_lunar_policy_configurations(
     temperatures = [float(t) for t in ll_config["temperature_grid"]]
     include_greedy = bool(ll_config.get("policy_selection_include_greedy", True))
 
+    print("Policy-configuration evaluation setup:")
+    print(
+        f"- first pass evaluated {len(selection_results)} checkpoints with "
+        f"mode={ll_config['selection_mode']} and T={float(ll_config['selection_temperature']):.2f}"
+    )
+    print(f"- second pass evaluates {len(candidates_by_path)} checkpoint candidates")
+    print(f"- for each candidate: {'greedy + ' if include_greedy else ''}sample temperatures {temperatures}")
+    print(f"- episodes per configuration: {n_eval}")
+    print("Checkpoint candidates:")
+    for candidate in candidates_by_path.values():
+        reasons = "; ".join(candidate["candidate_reasons"])
+        print(f"  - {candidate['name']} ({candidate['preset']}): {reasons}")
+
     for candidate_index, candidate in enumerate(candidates_by_path.values()):
+        candidate_for_eval = {key: candidate[key] for key in ["name", "source", "preset", "checkpoint_type", "path"]}
         if include_greedy:
             result = evaluate_lunar_checkpoint_candidate(
-                candidate,
+                candidate_for_eval,
                 n_eval=n_eval,
                 mode="greedy",
                 temperature=1.0,
@@ -609,7 +676,7 @@ def evaluate_lunar_policy_configurations(
 
         for temp_index, temperature in enumerate(temperatures):
             result = evaluate_lunar_checkpoint_candidate(
-                candidate,
+                candidate_for_eval,
                 n_eval=n_eval,
                 mode="sample",
                 temperature=temperature,
@@ -621,6 +688,9 @@ def evaluate_lunar_policy_configurations(
                 f"avg={result['avg_return']:.2f}, success={result['success_rate']:.1f}%, "
                 f"trunc={result['truncation_rate']:.1f}%"
             )
+
+    for result in results:
+        result["reliability_score"] = policy_configuration_score(result, "reliability_score")
 
     save_json_artifact("a2c_lunarlander_policy_config_selection.json", results)
     return results
@@ -648,15 +718,30 @@ def select_lunar_policy_configuration(
     if not policy_results:
         raise RuntimeError("No policy configuration was evaluated.")
 
+    for row in policy_results:
+        row["reliability_score"] = policy_configuration_score(row, "reliability_score")
+
     selected = max(policy_results, key=lambda row: _policy_selection_key(row, metric))
     best_success = max(policy_results, key=lambda row: _policy_selection_key(row, "success_rate"))
     fewest_trunc = min(policy_results, key=lambda row: (row.get("truncation_rate", 100.0), -row["avg_return"]))
+    top_by_metric = sorted(policy_results, key=lambda row: _policy_selection_key(row, metric), reverse=True)[:5]
 
     print("Policy-configuration summary:")
+    print(f"- selection metric: {metric}")
+    if metric == "reliability_score":
+        print("- reliability_score = avg_return + 2 * success_rate - 2 * truncation_rate")
+    print("Top configurations by selected metric:")
+    for rank, row in enumerate(top_by_metric, start=1):
+        print(
+            f"  {rank}. {row['name']} | {row['mode']} | T={row['temperature']:.2f} | "
+            f"avg={row['avg_return']:.2f} | success={row['success_rate']:.1f}% | "
+            f"trunc={row['truncation_rate']:.1f}% | reliability={row['reliability_score']:.2f}"
+        )
     print(
         f"- selected by {metric}: {selected['name']} | mode={selected['mode']} | "
         f"T={selected['temperature']:.2f} | avg={selected['avg_return']:.2f} | "
-        f"success={selected['success_rate']:.1f}% | trunc={selected['truncation_rate']:.1f}%"
+        f"success={selected['success_rate']:.1f}% | trunc={selected['truncation_rate']:.1f}% | "
+        f"reliability={selected['reliability_score']:.2f}"
     )
     print(
         f"- best success rate: {best_success['name']} | mode={best_success['mode']} | "
@@ -804,6 +889,13 @@ def print_lunar_evaluation_result(title: str, result: dict[str, Any]) -> None:
     print("Terminated episodes:", f"{result['terminated']}/{result['n_eval']}")
     print("Truncated episodes:", f"{result['truncated']}/{result['n_eval']}")
     print("Action frequencies:", [round(x, 3) for x in result["action_freq"]])
+    if result.get("last_quarter_action_freq") is not None:
+        print("Last-quarter action frequencies:", [round(x, 3) for x in result["last_quarter_action_freq"]])
+    if "final_abs_x" in result:
+        print("Final |x|:", round(result["final_abs_x"], 3))
+        print("Final |vertical velocity|:", round(result["final_abs_vy"], 3))
+        print("Final |angle|:", round(result["final_abs_angle"], 3))
+        print("Final leg contact rates:", f"{result['final_left_leg_contact_rate']:.1f}% / {result['final_right_leg_contact_rate']:.1f}%")
 
 
 def plot_lunar_selection(selection_results: list[dict[str, Any]], solved_threshold: float = 200.0) -> None:
@@ -893,9 +985,10 @@ def print_training_scope(ll_config: dict[str, Any], selected_experiments: list[s
     for name in selected_experiments:
         preset = ll_config["experiments"][name]
         updates = int(preset["total_timesteps"]) // (int(preset["n_envs"]) * int(preset["n_steps"]))
+        lr_final_text = "" if preset.get("lr_final") is None else f" -> {preset['lr_final']}"
         print(
             f"- {name}: timesteps={preset['total_timesteps']}, "
             f"n_envs={preset['n_envs']}, n_steps={preset['n_steps']}, "
-            f"updates~{updates}, lr={preset['lr']}, optimizer={preset['optimizer_name']}, "
+            f"updates~{updates}, lr={preset['lr']}{lr_final_text}, optimizer={preset['optimizer_name']}, "
             f"checkpoint={preset['checkpoint']}"
         )
