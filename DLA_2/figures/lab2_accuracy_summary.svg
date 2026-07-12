@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="392" viewBox="0 0 980 392">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30" y="38" font-family="Arial" font-size="24" font-weight="700" fill="#111827">DLA 2 - selected observed accuracies</text>
+<text x="30" y="94" font-family="Arial" font-size="15" fill="#111827">DistilBERT full fine-tuning</text>
+<rect x="330" y="78" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="78" width="455.9" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="95" font-family="Arial" font-size="15" fill="#111827">0.844</text>
+<text x="30" y="136" font-family="Arial" font-size="15" fill="#111827">LoRA</text>
+<rect x="330" y="120" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="120" width="452.9" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="137" font-family="Arial" font-size="15" fill="#111827">0.839</text>
+<text x="30" y="178" font-family="Arial" font-size="15" fill="#111827">Partial freezing</text>
+<rect x="330" y="162" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="162" width="452.4" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="179" font-family="Arial" font-size="15" fill="#111827">0.838</text>
+<text x="30" y="220" font-family="Arial" font-size="15" fill="#111827">DistilBERT features + SVM</text>
+<rect x="330" y="204" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="204" width="429.1" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="221" font-family="Arial" font-size="15" fill="#111827">0.795</text>
+<text x="30" y="262" font-family="Arial" font-size="15" fill="#111827">CLIP-Adapter b=128</text>
+<rect x="330" y="246" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="246" width="283.0" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="263" font-family="Arial" font-size="15" fill="#111827">0.524</text>
+<text x="30" y="304" font-family="Arial" font-size="15" fill="#111827">Zero-shot CLIP</text>
+<rect x="330" y="288" width="540" height="24" rx="3" fill="#e5e7eb"/>
+<rect x="330" y="288" width="257.0" height="24" rx="3" fill="#2563eb"/>
+<text x="885" y="305" font-family="Arial" font-size="15" fill="#111827">0.476</text>
+<text x="330" y="367" font-family="Arial" font-size="13" fill="#4b5563">Accuracy values read from notebook outputs</text>
+</svg>

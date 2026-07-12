@@ -1,55 +1,69 @@
-# DLA Lab 1 - GTSRB Transfer Learning
+# DLA 1 - GTSRB Computer Vision Laboratory
 
-This folder contains the Lab 1 work on the German Traffic Sign Recognition Benchmark (GTSRB).
+## Overview
 
-The refactored project separates reusable Python code from notebooks:
+This laboratory studies GTSRB traffic-sign classification through exploratory analysis, pretrained CNN feature extraction, a classical SVM baseline, ResNet-18 fine-tuning, pipeline consolidation and retrieval-based classification.
 
-- `config/`: reproducible experiment configuration.
-- `src/dla_lab1/`: reusable data, model, training and evaluation utilities.
-- `scripts/`: command-line entry points for environment checks, feature extraction and experiments.
-- `notebooks/`: clean report notebooks organized by exercise.
-- `data/`, `artifacts/`, `checkpoints/`, `wandb/`: local/generated folders ignored by Git.
+## Official assignment
 
-## Reproducibility Notes
+- GitHub notebook: [`ASSIGNMENT.ipynb`](ASSIGNMENT.ipynb)
+- Markdown copy: [`ASSIGNMENT.md`](ASSIGNMENT.md)
 
-- Dataset: GTSRB, 43 classes.
-- Local train split source: `data/gtsrb/GTSRB/Training`.
-- Local test split source: `data/gtsrb/GTSRB/Final_Test` plus `data/gtsrb/GT-final_test.csv`.
-- Default image size: `64x64`.
-- Default hardware profile: NVIDIA RTX 2050 with 4 GB VRAM.
-- Default training path: ResNet-18 transfer learning.
+## Assignment coverage
 
-## Suggested Workflow
+| Assignment requirement | Notebook section | Status | Evidence |
+| --- | --- | ---: | --- |
+| Exercise 1.1 - EDA GTSRB | `01_eda_and_feature_baseline.ipynb` | Completed | Dataset statistics and class distribution |
+| Exercise 1.2 - stable baseline | `01_eda_and_feature_baseline.ipynb` | Completed | ResNet-18 features + SVM, test accuracy 0.6412 |
+| Exercise 1.3 - fine-tuning baseline | `02_finetuning_pipeline.ipynb` | Completed | Baseline fine-tuning, test accuracy 0.5038 |
+| Exercise 2 - reproducible pipeline | `02b_pipeline_consolidation.ipynb` | Completed | Config-driven pipeline, local artifacts and W&B logs |
+| Exercise 3.1 - improve fine-tuning | `03_improvements_and_retrieval.ipynb` | Completed | Improved model, test accuracy 0.8025 |
+| Exercise 3.2 - retrieval/NMC | `03b_retrieval_training_free_classification.ipynb` | Completed | Precision@1 0.4812 and NMC accuracy 0.4185 |
 
-1. Run `scripts/check_env.py`.
-2. Run `notebooks/01_eda_and_feature_baseline.ipynb`.
-3. Run `notebooks/02_finetuning_pipeline.ipynb`.
-4. Run `notebooks/02b_pipeline_consolidation.ipynb`.
-5. Run `notebooks/03_improvements_and_retrieval.ipynb`.
-6. Run `notebooks/03b_retrieval_training_free_classification.ipynb`.
-7. Keep final interpretation, limitations and AI/tooling disclosure in notebook markdown.
+## Results summary
 
-For the final submission, use the clean notebooks in `notebooks/` as the report. `notebooks/Esperimenti_di_prova.ipynb` is kept only as an archive of exploratory runs and should not be treated as the source of the final metrics.
+| Experiment | Metric | Observed value |
+| --- | --- | ---: |
+| ResNet-18 feature extractor + SVM | Test accuracy | 0.6412 |
+| Fine-tuning baseline | Test accuracy | 0.5038 |
+| Improved fine-tuning | Test accuracy | 0.8025 |
+| Retrieval, cosine similarity | Precision@1 | 0.4812 |
+| Retrieval, nearest-mean classifier | Test accuracy | 0.4185 |
 
-## Environment Recommendation
+![Best validation accuracy summary](figures/gtsrb_validation_accuracy_summary.svg)
 
-Use the Jupyter kernel `Python 3 (ipykernel)` from the Conda environment `clip_lora`. This is the environment used for the final runs and includes the required PyTorch/Torchvision and scientific-Python stack.
+## Weights & Biases usage
 
-## Academic Integrity and AI Disclosure
+Weights & Biases was used to monitor training and validation metrics during multiple fine-tuning runs. Local W&B summaries were inspected to document learning rate, training accuracy, validation accuracy and validation loss. These logs are generated experiment evidence and are ignored by Git.
 
-The course code of conduct allows LLM-assisted work only when transparent. Any final submission should state:
+## Main dependencies and imports
 
-- which AI tools were used;
-- whether they helped with code generation, refactoring, debugging or writing;
-- which outputs were manually checked and modified;
-- external sources used for datasets, pretrained models and libraries.
+| Package/import | Purpose | Used in |
+| --- | --- | --- |
+| `torch` | Neural-network training, tensors and checkpoint loading | Fine-tuning, evaluation |
+| `torchvision` | GTSRB dataset and pretrained ResNet backbones | Dataset and feature extraction |
+| `sklearn.svm.SVC` | Classical classifier over extracted features | Stable baseline |
+| `pandas` | Result tables and summaries | Notebooks and reports |
+| `matplotlib` | Plots and visual checks | EDA and training curves |
+| `wandb` | Optional experiment tracking | Pipeline consolidation |
 
-## Local Files Not Tracked by Git
+## Local functions and source files
 
-The following are intentionally excluded:
+| Function/class | Defined in | Purpose | Main inputs | Main outputs | Used in |
+| --- | --- | --- | --- | --- | --- |
+| `load_config` | `src/dla_lab1/config.py` | Load YAML configuration | config path | dict config | All notebooks |
+| `build_dataloaders` | `src/dla_lab1/data.py` | Build train/validation/test loaders | data root, split config | dataloaders and metadata | Fine-tuning |
+| `build_classifier` | `src/dla_lab1/models.py` | Create ResNet classifier | model name, num classes | PyTorch model | Fine-tuning |
+| `run_finetuning` | `src/dla_lab1/experiments.py` | Execute configured experiment | config, experiment name | model, history, artifacts | Exercises 1.3/3.1 |
+| `extract_features` | `src/dla_lab1/features.py` | Extract CNN embeddings | model, dataloader | feature tensors | Baseline/retrieval |
+| `classification_metrics` | `src/dla_lab1/evaluate.py` | Compute accuracy and report | y_true, y_pred | metrics dict | Evaluation |
 
-- datasets and downloaded archives;
-- model checkpoints and cached feature tensors;
-- W&B logs;
-- Python and notebook caches;
-- local secrets such as API keys.
+## External sources and references
+
+| Source | Used for | Adaptation or contribution |
+| --- | --- | --- |
+| Official assignment | Requirements | Converted into `ASSIGNMENT.ipynb`. |
+| GTSRB benchmark | Dataset | Traffic-sign classification data. |
+| Torchvision documentation | Dataset/model APIs | GTSRB wrapper and pretrained ResNet. |
+| Scikit-learn documentation | SVM and metrics | Classical baseline and reports. |
+| Weights & Biases documentation | Experiment tracking | Optional monitoring of Lab 1 runs. |

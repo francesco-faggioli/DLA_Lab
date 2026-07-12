@@ -38,3 +38,17 @@ output_*/
 *.log
 .DS_Store
 Thumbs.db
+
+# Python caches and test caches
+.pytest_cache/
+.mypy_cache/
+
+# Editors
+.vscode/
+.idea/
+
+# Local generated documentation archives
+_archive/obsolete_local_settings/
+
+# Experiment logs
+logs/
