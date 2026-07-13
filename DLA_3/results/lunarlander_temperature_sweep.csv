@@ -1,0 +1,14 @@
+mode,temperature,average_return,standard_deviation_return,success_rate_percent,truncation_rate_percent,evaluation_episodes,source
+sample,0.25,146.5848919443,97.4237058586,36.0,2.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.35,163.2217452342,93.4265923335,37.0,4.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.45,179.6475825997,83.0372956682,47.0,1.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.50,152.9526905542,101.1374203543,39.0,2.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.55,162.2869037227,91.5376943335,45.0,1.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.60,169.3528540383,92.5341216722,53.0,0.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.65,144.0726455998,101.8519413344,39.0,4.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.70,140.3462277948,106.8889681837,46.0,2.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.75,170.4551929951,97.3420646345,59.0,0.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.85,155.5237848392,99.7042503209,49.0,2.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,0.95,160.6935729353,107.9164842741,61.0,0.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,1.10,118.3239644308,113.4945763067,42.0,3.0,100,local artifact a2c_lunarlander_policy_config_selection.json
+sample,1.25,133.7053704991,113.3511441203,46.0,0.0,100,local artifact a2c_lunarlander_policy_config_selection.json

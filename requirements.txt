@@ -1,19 +1,32 @@
-jupyter
+# Ambiente notebook e analisi
+jupyterlab
 ipykernel
+ipywidgets
+nbformat
 numpy
 pandas
 matplotlib
+pillow
 scikit-learn
-torch
-torchvision
 tqdm
 pyyaml
+
+# Computer vision e tracking
+torch
+torchvision
 wandb
+
+# Transformer e modelli multimodali
 datasets
 transformers
 peft
 accelerate
 open_clip_torch
-gymnasium
+
+# Deep Reinforcement Learning
+gymnasium[box2d]
 pygame
-box2d-py
+
+# Controlli di qualita' locali
+ruff
+black

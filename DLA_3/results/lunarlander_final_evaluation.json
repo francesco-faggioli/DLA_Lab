@@ -1,0 +1,20 @@
+{
+  "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
+  "preset": "sb3_zoo_raw_current",
+  "mode": "sample",
+  "temperature": 0.75,
+  "evaluation_episodes": 200,
+  "average_return": 165.76132762441972,
+  "standard_deviation_return": 100.56278526980033,
+  "minimum_return": -168.7675674236684,
+  "maximum_return": 294.8833562590294,
+  "average_episode_length": 487.825,
+  "success_threshold": 200.0,
+  "success_rate_percent": 56.00000000000001,
+  "terminated_episodes": 196,
+  "truncated_episodes": 4,
+  "truncation_rate_percent": 2.0,
+  "action_frequencies": [0.18536360375134525, 0.17982883206067748, 0.46820068672167275, 0.1666068774663045],
+  "last_quarter_action_frequencies": [0.5391595814257685, 0.13313440156965337, 0.2308289731850883, 0.09687704381948986],
+  "source": "notebooks/03_a2c_cartpole_lunarlander.ipynb cell 18 and local artifact artifacts/a2c_lunarlander_final_evaluation.json"
+}

@@ -1,0 +1,4 @@
+epoch,step,training_loss,validation_loss,validation_accuracy,validation_f1,learning_rate,source
+1,267,,0.369405,0.836773,0.844086,,notebooks/02_distilbert_full_finetuning.ipynb cell 13
+2,534,,0.357698,0.846154,0.839216,,notebooks/02_distilbert_full_finetuning.ipynb cell 13
+3,801,,0.387215,0.852720,0.851747,,notebooks/02_distilbert_full_finetuning.ipynb cell 13

@@ -5,7 +5,7 @@ target-version = ["py312"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "scripts"]
+src = ["DLA_1/src", "DLA_1/scripts", "DLA_2/src", "DLA_2/scripts", "DLA_3/src", "DLA_3/scripts", "tools"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

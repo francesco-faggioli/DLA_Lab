@@ -1,18 +1,11 @@
-# DLA Lab 3 Clean Notebooks
+# DLA 3 notebook order
 
-Run these notebooks in order with the `DRL` Conda environment.
+Linux or WSL is recommended. Run or inspect the final notebooks in this order:
 
-## Exercise Mapping
+1. `01_cartpole_reinforce_evaluation.ipynb` — REINFORCE and periodic multi-episode evaluation.
+2. `02_cartpole_value_baseline.ipynb` — raw/standardized returns and learned value baseline.
+3. `03_a2c_cartpole_lunarlander.ipynb` — A2C validation on CartPole and final LunarLander study.
 
-- Exercise 1: `01_cartpole_reinforce_evaluation.ipynb`
-- Exercise 2: `02_cartpole_value_baseline.ipynb`
-- Exercise 3.1: `03_a2c_cartpole_lunarlander.ipynb`
-- Exploratory A2C runs: `00_esperimenti_di_prova_a2c.ipynb`
+The final report is [`../README.md`](../README.md) and lightweight result evidence is under [`../results/`](../results/). Training, large sweeps, and rendering are opt-in through `RUN_*` flags. Checkpoint evaluation is performed only when a local checkpoint exists.
 
-## Notes
-
-- Old exploratory notebooks are kept in `../../DLA_3` and are not modified.
-- Notebook 3 keeps the useful evidence from the old A2C runs, but the final code imports reusable functions from `src/dla_lab3/a2c.py`.
-- Training output cells are intentionally empty until the notebooks are rerun.
-- Final conclusions should be checked after rerunning the notebooks in Ubuntu/WSL.
-- Visual render cells require a local display, so they should be run only inside the Linux/VS Code setup prepared for the lab.
+The exploratory notebook is preserved at `../exploratory/00_esperimenti_di_prova_a2c.ipynb`. It is not part of the final execution order and its early trials are not used as headline results.

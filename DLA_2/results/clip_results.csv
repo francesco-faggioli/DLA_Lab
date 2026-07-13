@@ -1,0 +1,7 @@
+method,accuracy,gain_vs_single_prompt_zero_shot,source
+Zero-shot CLIP,0.475928,0.0,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16
+Zero-shot CLIP + prompt ensemble,0.478876,0.002948,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16
+CLIP-Adapter bottleneck 64,0.514443,0.038514,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16
+CLIP-Adapter bottleneck 64 + prompt ensemble,0.506681,0.030753,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16
+CLIP-Adapter bottleneck 128,0.524072,0.048143,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16
+CLIP-Adapter bottleneck 128 + prompt ensemble,0.519257,0.043329,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 16

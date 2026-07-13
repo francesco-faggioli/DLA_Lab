@@ -1,0 +1,10 @@
+experiment,best_epoch,best_validation_accuracy,last_train_accuracy,last_validation_accuracy,source
+ex1_3_head_only_adam_ce,6,0.4666666667,0.8273775216,0.4654639175,local artifact summary exported from artifacts/runs/ex1_3_head_only_adam_ce/summary.json
+ex3_1_head_only_aggressive_aug,10,0.4386597938,0.6678194044,0.4295532646,local artifact summary exported from artifacts/runs/ex3_1_head_only_aggressive_aug/summary.json
+ex3_1_layer4_aggressive_aug,11,0.7432989691,0.9926512968,0.7369415808,local artifact summary exported from artifacts/runs/ex3_1_layer4_aggressive_aug/summary.json
+ex3_1_layer4_conservative_aug,9,0.7541237113,0.9979346782,0.7512027491,local artifact summary exported from artifacts/runs/ex3_1_layer4_conservative_aug/summary.json
+ex3_1_layer4_conservative_ls005,20,0.7687285223,0.9996157541,0.7687285223,local artifact summary exported from artifacts/runs/ex3_1_layer4_conservative_ls005/summary.json
+ex3_1_layer4_no_aug_lr1e4_wd05,13,0.6946735395,1.0,0.6938144330,local artifact summary exported from artifacts/runs/ex3_1_layer4_no_aug_lr1e4_wd05/summary.json
+ex3_1_layer4_safe_aug_ls005_discriminative,15,0.7305841924,0.9985110471,0.7281786942,local artifact summary exported from artifacts/runs/ex3_1_layer4_safe_aug_ls005_discriminative/summary.json
+ex3_1_layer4_spatial_aug,15,0.7089347079,0.9986071085,0.7089347079,local artifact summary exported from artifacts/runs/ex3_1_layer4_spatial_aug/summary.json
+ex3_1_layer4_unfrozen,15,0.7584192440,1.0,0.7584192440,local artifact summary exported from artifacts/runs/ex3_1_layer4_unfrozen/summary.json

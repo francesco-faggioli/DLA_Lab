@@ -17,7 +17,7 @@ from .experiments import (
     select_lunar_policy_configuration,
     train_lunar_presets,
 )
-from .visualization import run_lunar_visual_episodes, show_frames
+from .visualization import run_cartpole_visual_episodes, run_lunar_visual_episodes, show_frames
 from .a2c import (
     A2CConfig,
     A2CNet,
@@ -78,6 +78,7 @@ __all__ = [
     "reinforce",
     "reinforce_with_value_baseline",
     "run_lunar_temperature_sweep",
+    "run_cartpole_visual_episodes",
     "run_lunar_visual_episodes",
     "run_a2c_episode",
     "run_episode",

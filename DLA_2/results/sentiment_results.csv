@@ -1,0 +1,7 @@
+method,split,accuracy,f1,precision,recall,trainable_parameters,trainable_percent,source
+DistilBERT CLS + linear SVM,validation,0.818011,0.814176,0.831703,0.797373,,,notebooks/01_sentiment_dataset_tokenizer_baseline.ipynb cell 16
+DistilBERT CLS + linear SVM,test,0.794559,0.790831,0.805447,0.776735,,,notebooks/01_sentiment_dataset_tokenizer_baseline.ipynb cell 16
+Full DistilBERT fine-tuning,validation,0.852720,0.851747,0.857414,0.846154,66955010,100.0,notebooks/02_distilbert_full_finetuning.ipynb cell 14
+Full DistilBERT fine-tuning,test,0.844278,0.842803,0.850860,0.834897,66955010,100.0,notebooks/02_distilbert_full_finetuning.ipynb cell 14
+LoRA,test,0.8386491557,0.8349328215,0.8546168959,0.8161350844,739586,1.0925332947,notebooks/03_efficient_finetuning_sentiment.ipynb cell 7
+Partial freezing,test,0.8377110694,0.8347659981,0.8501945525,0.8198874296,14767874,22.0564137023,notebooks/03_efficient_finetuning_sentiment.ipynb cell 11

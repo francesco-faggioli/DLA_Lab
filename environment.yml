@@ -1,26 +1,9 @@
 name: DLA2026
 channels:
-  - pytorch
-  - nvidia
   - conda-forge
   - defaults
 dependencies:
   - python=3.12
   - pip
-  - pytorch
-  - torchvision
-  - pytorch-cuda
-  - numpy
-  - pandas
-  - matplotlib
-  - scikit-learn
-  - pillow
-  - tqdm
-  - pyyaml
-  - ipykernel
-  - jupyterlab
   - pip:
-      - wandb
-      - ruff
-      - black
-      - nbstripout
+      - -r requirements.txt

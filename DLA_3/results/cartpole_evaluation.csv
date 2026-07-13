@@ -1,0 +1,21 @@
+episode,standardized_return,raw_return,value_baseline_return,source
+0,9.25,14.35,12.90,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+50,116.45,9.65,133.35,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+100,295.40,9.50,48.95,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+150,72.95,9.35,166.70,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+200,160.90,9.25,164.90,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+250,489.35,12.25,194.40,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+300,179.25,10.10,393.65,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+350,210.40,9.50,417.50,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+400,373.45,9.55,290.85,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+450,269.45,9.65,483.05,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+500,441.70,9.35,221.45,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+550,185.00,15.60,213.45,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+600,193.45,33.55,478.95,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+650,211.20,51.20,295.05,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+700,227.95,56.10,500.00,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+750,327.30,372.85,500.00,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+800,178.55,230.60,472.75,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+850,245.15,152.95,500.00,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+900,159.55,184.95,500.00,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10
+950,190.20,219.70,500.00,notebooks/02_cartpole_value_baseline.ipynb cells 6 8 and 10

@@ -1,0 +1,7 @@
+dataset,split,rows,labels,source
+Rotten Tomatoes,train,8530,"0;1",notebooks/01_sentiment_dataset_tokenizer_baseline.ipynb cell 6
+Rotten Tomatoes,validation,1066,"0;1",notebooks/01_sentiment_dataset_tokenizer_baseline.ipynb cell 6
+Rotten Tomatoes,test,1066,"0;1",notebooks/01_sentiment_dataset_tokenizer_baseline.ipynb cell 6
+ImageNet-Sketch,train,40711,1000 classes,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 7
+ImageNet-Sketch,validation,10178,1000 classes,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 7
+ImageNet-Sketch,adapter training subset,5000,1000 classes,notebooks/04_clip_adapter_imagenet_sketch.ipynb cells 8 and 13

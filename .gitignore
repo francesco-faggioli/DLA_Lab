@@ -47,8 +47,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local generated documentation archives
-_archive/obsolete_local_settings/
-
 # Experiment logs
 logs/

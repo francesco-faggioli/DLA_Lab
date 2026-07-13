@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +11,9 @@ from IPython.display import HTML, display
 from matplotlib import animation
 
 from .a2c import load_a2c_checkpoint, lunar_a2c_from_env
-from .envs import make_env
+from .envs import make_env, observation_scale
 from .experiments import save_json_artifact
+from .policy_gradient import policy_from_env, preprocess_observation, select_action
 
 
 def show_frames(frames: list[Any], interval: int = 30, max_display_frames: int = 300) -> None:
@@ -51,6 +53,131 @@ def show_frames(frames: list[Any], interval: int = 30, max_display_frames: int =
     display(HTML(anim.to_jshtml()))
 
 
+def run_cartpole_visual_episodes(
+    checkpoint_path: str | Path,
+    model_type: str = "reinforce_policy",
+    n_episodes: int = 5,
+    action_mode: str = "greedy",
+    seed_base: int = 11_112,
+    show_inline: bool = True,
+    summary_path: str | Path | None = None,
+    hidden_size: int = 128,
+) -> dict[str, Any]:
+    """Esegue episodi visuali CartPole riproducibili senza aggiornare il modello.
+
+    Args:
+        checkpoint_path: Checkpoint della policy REINFORCE selezionata.
+        model_type: Tipo esplicito di architettura. La funzione accetta
+            `reinforce_policy`, usato anche dalla variante value-baseline.
+        n_episodes: Numero di episodi visuali da eseguire.
+        action_mode: `greedy` oppure `sample`.
+        seed_base: Seed del generatore che produce seed distinti per gli episodi.
+        show_inline: Se True, mostra localmente ogni animazione nel notebook.
+        summary_path: JSON leggero opzionale in cui salvare solo le statistiche.
+        hidden_size: Ampiezza dei layer nascosti della policy salvata.
+
+    Returns:
+        Dizionario con checkpoint, modalita', seed e statistiche per episodio.
+        I frame non vengono inclusi nel valore restituito o nel JSON.
+
+    Raises:
+        FileNotFoundError: Se il checkpoint non esiste.
+        ValueError: Se modello, modalita' o numero di episodi non sono validi.
+    """
+
+    checkpoint = Path(checkpoint_path)
+    if not checkpoint.is_file():
+        raise FileNotFoundError(f"Checkpoint CartPole non trovato: {checkpoint}")
+    if model_type != "reinforce_policy":
+        raise ValueError("model_type deve essere 'reinforce_policy'")
+    if action_mode not in {"sample", "greedy"}:
+        raise ValueError("action_mode deve essere 'sample' o 'greedy'")
+    if n_episodes <= 0:
+        raise ValueError("n_episodes deve essere positivo")
+
+    rng = np.random.default_rng(seed_base)
+    episode_seeds = rng.choice(1_000_000, size=n_episodes, replace=False).tolist()
+    env = make_env("CartPole-v1", seed=int(episode_seeds[0]), render_mode="rgb_array")
+
+    try:
+        policy = policy_from_env(env, hidden_size=hidden_size)
+        payload = torch.load(checkpoint, map_location="cpu")
+        state_dict = payload.get("model_state_dict", payload) if isinstance(payload, dict) else payload
+        policy.load_state_dict(state_dict)
+        policy.eval()
+        obs_scale = observation_scale("CartPole-v1")
+        visual_results: list[dict[str, Any]] = []
+
+        for episode_index, episode_seed in enumerate(episode_seeds, start=1):
+            obs, _ = env.reset(seed=int(episode_seed))
+            frames: list[Any] = []
+            total_reward = 0.0
+            terminated = False
+            truncated = False
+            length = 0
+
+            with torch.inference_mode():
+                for _ in range(500):
+                    frame = env.render()
+                    if frame is not None:
+                        frames.append(frame)
+                    obs_t = preprocess_observation(obs, obs_scale)
+                    action, _ = select_action(policy, obs_t, mode=action_mode)
+                    obs, reward, terminated, truncated, _ = env.step(action)
+                    total_reward += float(reward)
+                    length += 1
+                    if terminated or truncated:
+                        final_frame = env.render()
+                        if final_frame is not None:
+                            frames.append(final_frame)
+                        break
+
+            row = {
+                "episode": episode_index,
+                "seed": int(episode_seed),
+                "return": total_reward,
+                "length": length,
+                "terminated": bool(terminated),
+                "truncated": bool(truncated),
+                "action_mode": action_mode,
+                "model_type": model_type,
+                "checkpoint": checkpoint.name,
+                "frame_count": len(frames),
+                "frame_shape": list(frames[0].shape) if frames else None,
+            }
+            visual_results.append(row)
+            print(
+                f"episode={episode_index} seed={episode_seed} return={total_reward:.0f} "
+                f"length={length} terminated={terminated} truncated={truncated}"
+            )
+            if show_inline:
+                print(f"Visual episode {episode_index}/{n_episodes}")
+                show_frames(frames, interval=30, max_display_frames=250)
+
+        summary = {
+            "model_type": model_type,
+            "checkpoint": checkpoint.name,
+            "action_mode": action_mode,
+            "seed_base": seed_base,
+            "episode_seeds": [int(seed) for seed in episode_seeds],
+            "n_episodes": n_episodes,
+            "episodes": visual_results,
+            "average_return": float(np.mean([row["return"] for row in visual_results])),
+            "average_length": float(np.mean([row["length"] for row in visual_results])),
+        }
+        if summary_path is not None:
+            output_path = Path(summary_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+        return summary
+    finally:
+        env.close()
+
+
 def run_lunar_visual_episodes(
     checkpoint_path: str | Path,
     temperature: float,
@@ -58,26 +185,25 @@ def run_lunar_visual_episodes(
     n_episodes: int = 5,
     seed_start: int = 100_000,
     show_inline: bool = True,
+    summary_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run and optionally display LunarLander visual episodes.
+    """Esegue e mostra episodi LunarLander senza includere frame nel JSON.
 
-    Args:
-        checkpoint_path: Selected A2C checkpoint.
-        temperature: Stochastic policy temperature.
-        mode: `sample` for stochastic actions or `greedy` for argmax actions.
-        n_episodes: Number of visual episodes to run.
-        seed_start: First episode seed.
-        show_inline: If True, display every episode as an inline animation.
-
-    What it does:
-        Runs the selected policy for `n_episodes` episodes using
-        `render_mode="rgb_array"`, prints each return/length and stores the
-        visual statistics as an artifact.
-
-    Outputs:
-        Dictionary with episode statistics and collected frame lists.
+    Ogni episodio usa il seed `seed_start + indice`, registra terminazione e
+    troncamento, ed esegue la policy in modalita' di inferenza. Il checkpoint
+    non viene modificato.
     """
 
+    if mode not in {"sample", "greedy"}:
+        raise ValueError("mode must be 'sample' or 'greedy'")
+    if n_episodes <= 0:
+        raise ValueError("n_episodes deve essere positivo")
+    if mode == "sample" and temperature <= 0:
+        raise ValueError("temperature deve essere positiva in modalita' sample")
+
+    checkpoint = Path(checkpoint_path)
+    if not checkpoint.is_file():
+        raise FileNotFoundError(f"Checkpoint LunarLander non trovato: {checkpoint}")
     env = make_env(
         "LunarLander-v3",
         seed=seed_start,
@@ -85,66 +211,90 @@ def run_lunar_visual_episodes(
         continuous=False,
         enable_wind=False,
     )
-    net = lunar_a2c_from_env(env, hidden_size=64)
-    load_a2c_checkpoint(net, checkpoint_path)
+    try:
+        net = lunar_a2c_from_env(env, hidden_size=64)
+        load_a2c_checkpoint(net, checkpoint)
+        visual_results: list[dict[str, Any]] = []
 
-    visual_results = []
-    all_frames = []
+        for ep_idx in range(n_episodes):
+            episode_seed = seed_start + ep_idx
+            torch.manual_seed(episode_seed)
+            obs, _ = env.reset(seed=episode_seed)
+            total_reward = 0.0
+            actions: list[int] = []
+            frames: list[Any] = []
+            terminated = False
+            truncated = False
 
-    if mode not in {"sample", "greedy"}:
-        raise ValueError("mode must be 'sample' or 'greedy'")
+            with torch.inference_mode():
+                for _ in range(1000):
+                    frame = env.render()
+                    if frame is not None:
+                        frames.append(frame)
+                    obs_t = torch.tensor(obs, dtype=torch.float32)
+                    logits, _ = net.get_logits_and_value(obs_t)
+                    if mode == "greedy":
+                        action = int(torch.argmax(logits).item())
+                    else:
+                        dist = torch.distributions.Categorical(logits=logits / temperature)
+                        action = int(dist.sample().item())
 
-    for ep_idx in range(n_episodes):
-        obs, _ = env.reset(seed=seed_start + ep_idx)
-        total_reward = 0.0
-        actions = []
-        frames = []
+                    obs, reward, terminated, truncated, _ = env.step(action)
+                    total_reward += float(reward)
+                    actions.append(action)
+                    if terminated or truncated:
+                        final_frame = env.render()
+                        if final_frame is not None:
+                            frames.append(final_frame)
+                        break
 
-        with torch.no_grad():
-            for _ in range(1000):
-                frames.append(env.render())
+            action_counts = np.bincount(actions, minlength=4)
+            action_freq = (action_counts / action_counts.sum()).tolist()
+            row = {
+                "episode": ep_idx + 1,
+                "seed": episode_seed,
+                "return": total_reward,
+                "length": len(actions),
+                "success": total_reward >= 200.0,
+                "terminated": bool(terminated),
+                "truncated": bool(truncated),
+                "mode": mode,
+                "temperature": temperature,
+                "checkpoint": checkpoint.name,
+                "action_freq": action_freq,
+                "frame_count": len(frames),
+                "frame_shape": list(frames[0].shape) if frames else None,
+            }
+            visual_results.append(row)
+            print(
+                f"episode={row['episode']} seed={episode_seed} return={row['return']:.2f} "
+                f"length={row['length']} terminated={terminated} truncated={truncated} "
+                f"success={row['success']}"
+            )
+            if show_inline:
+                print(f"\nVisual episode {ep_idx + 1}/{n_episodes}")
+                show_frames(frames, interval=30, max_display_frames=300)
 
-                obs_t = torch.tensor(obs, dtype=torch.float32) / torch.ones(8, dtype=torch.float32)
-                logits, _ = net.get_logits_and_value(obs_t)
-                if mode == "greedy":
-                    action = int(torch.argmax(logits).item())
-                else:
-                    dist = torch.distributions.Categorical(logits=logits / temperature)
-                    action = int(dist.sample().item())
-
-                obs, reward, terminated, truncated, _ = env.step(action)
-                total_reward += float(reward)
-                actions.append(action)
-
-                if terminated or truncated:
-                    frames.append(env.render())
-                    break
-
-        action_counts = np.bincount(actions, minlength=4)
-        action_freq = (action_counts / action_counts.sum()).tolist()
-        row = {
-            "episode": ep_idx + 1,
-            "return": total_reward,
-            "length": len(actions),
-            "success": total_reward >= 200.0,
+        summary = {
+            "checkpoint": checkpoint.name,
             "mode": mode,
             "temperature": temperature,
-            "action_freq": action_freq,
+            "seed_start": seed_start,
+            "n_episodes": n_episodes,
+            "episodes": visual_results,
+            "average_return": float(np.mean([row["return"] for row in visual_results])),
+            "average_length": float(np.mean([row["length"] for row in visual_results])),
         }
-        visual_results.append(row)
-        all_frames.append(frames)
-
-        print(
-            f"episode={row['episode']} return={row['return']:.2f} "
-            f"length={row['length']} success={row['success']}"
-        )
-
-    env.close()
-    save_json_artifact("a2c_lunarlander_visual_episodes.json", visual_results)
-
-    if show_inline:
-        for idx, frames in enumerate(all_frames, start=1):
-            print(f"\nVisual episode {idx}/{n_episodes}")
-            show_frames(frames, interval=30, max_display_frames=300)
-
-    return {"results": visual_results, "frames": all_frames}
+        if summary_path is None:
+            save_json_artifact("a2c_lunarlander_visual_episodes.json", summary)
+        else:
+            output_path = Path(summary_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+        return summary
+    finally:
+        env.close()

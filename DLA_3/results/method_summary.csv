@@ -1,0 +1,10 @@
+environment,method,metric,value,source
+CartPole-v1,REINFORCE standardized returns,best_evaluation_return,489.35,notebooks/01_cartpole_reinforce_evaluation.ipynb cell 20
+CartPole-v1,REINFORCE standardized returns,final_evaluation_return,190.20,notebooks/01_cartpole_reinforce_evaluation.ipynb cell 20
+CartPole-v1,REINFORCE raw returns,best_evaluation_return,372.85,notebooks/02_cartpole_value_baseline.ipynb cell 13
+CartPole-v1,REINFORCE raw returns,final_evaluation_return,219.70,notebooks/02_cartpole_value_baseline.ipynb cell 13
+CartPole-v1,REINFORCE with value baseline,best_evaluation_return,500.00,notebooks/02_cartpole_value_baseline.ipynb cell 13
+CartPole-v1,REINFORCE with value baseline,final_evaluation_return,500.00,notebooks/02_cartpole_value_baseline.ipynb cell 13
+CartPole-v1,A2C,greedy_average_return,494.51,notebooks/03_a2c_cartpole_lunarlander.ipynb cell 8
+LunarLander-v3,A2C sampled T=0.75,average_return,165.7613276244,notebooks/03_a2c_cartpole_lunarlander.ipynb cell 18
+LunarLander-v3,A2C sampled T=0.75,success_rate_percent,56.0,notebooks/03_a2c_cartpole_lunarlander.ipynb cell 18

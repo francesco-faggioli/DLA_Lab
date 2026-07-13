@@ -1,0 +1,11 @@
+adapter,epoch,train_loss,validation_loss,source
+bottleneck 64,26,0.302842,2.151163,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 64,27,0.301724,2.150304,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 64,28,0.300533,2.151331,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 64,29,0.296222,2.151732,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 64,30,0.296206,2.151857,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 128,26,0.096574,2.182509,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 128,27,0.095409,2.182874,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 128,28,0.095256,2.182661,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 128,29,0.094519,2.183435,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17
+bottleneck 128,30,0.093990,2.183509,notebooks/04_clip_adapter_imagenet_sketch.ipynb cell 17

@@ -1,0 +1,10 @@
+experiment,task,metric,value,source
+ResNet-18 features + SVM,GTSRB classification,test_accuracy,0.6412,notebooks/01_eda_and_feature_baseline.ipynb cell 26
+Head-only ResNet-18 fine-tuning,GTSRB classification,test_accuracy,0.5038,notebooks/02_finetuning_pipeline.ipynb cell 22
+Improved ResNet-18 fine-tuning,GTSRB classification,test_accuracy,0.8025,notebooks/03_improvements_and_retrieval.ipynb cell 20
+Cosine retrieval,GTSRB retrieval,precision_at_1,0.481235,notebooks/03b_retrieval_training_free_classification.ipynb cell 9
+Cosine retrieval,GTSRB retrieval,precision_at_5,0.459398,notebooks/03b_retrieval_training_free_classification.ipynb cell 9
+Cosine retrieval,GTSRB retrieval,precision_at_10,0.439367,notebooks/03b_retrieval_training_free_classification.ipynb cell 9
+Cosine retrieval,GTSRB retrieval,mean_average_precision,0.1696,notebooks/03b_retrieval_training_free_classification.ipynb cell 16
+Cosine retrieval,GTSRB retrieval,macro_mean_average_precision,0.1301,notebooks/03b_retrieval_training_free_classification.ipynb cell 16
+Nearest-Mean Classifier,GTSRB classification,test_accuracy,0.418527,notebooks/03b_retrieval_training_free_classification.ipynb cell 14

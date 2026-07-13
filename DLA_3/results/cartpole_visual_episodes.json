@@ -1,0 +1,103 @@
+{
+  "model_type": "reinforce_policy",
+  "checkpoint": "cartpole_reinforce_value_baseline.pt",
+  "action_mode": "greedy",
+  "seed_base": 11112,
+  "episode_seeds": [
+    805471,
+    233426,
+    748088,
+    994769,
+    795806
+  ],
+  "n_episodes": 5,
+  "episodes": [
+    {
+      "episode": 1,
+      "seed": 805471,
+      "return": 500.0,
+      "length": 500,
+      "terminated": false,
+      "truncated": true,
+      "action_mode": "greedy",
+      "model_type": "reinforce_policy",
+      "checkpoint": "cartpole_reinforce_value_baseline.pt",
+      "frame_count": 501,
+      "frame_shape": [
+        400,
+        600,
+        3
+      ]
+    },
+    {
+      "episode": 2,
+      "seed": 233426,
+      "return": 500.0,
+      "length": 500,
+      "terminated": false,
+      "truncated": true,
+      "action_mode": "greedy",
+      "model_type": "reinforce_policy",
+      "checkpoint": "cartpole_reinforce_value_baseline.pt",
+      "frame_count": 501,
+      "frame_shape": [
+        400,
+        600,
+        3
+      ]
+    },
+    {
+      "episode": 3,
+      "seed": 748088,
+      "return": 500.0,
+      "length": 500,
+      "terminated": false,
+      "truncated": true,
+      "action_mode": "greedy",
+      "model_type": "reinforce_policy",
+      "checkpoint": "cartpole_reinforce_value_baseline.pt",
+      "frame_count": 501,
+      "frame_shape": [
+        400,
+        600,
+        3
+      ]
+    },
+    {
+      "episode": 4,
+      "seed": 994769,
+      "return": 500.0,
+      "length": 500,
+      "terminated": false,
+      "truncated": true,
+      "action_mode": "greedy",
+      "model_type": "reinforce_policy",
+      "checkpoint": "cartpole_reinforce_value_baseline.pt",
+      "frame_count": 501,
+      "frame_shape": [
+        400,
+        600,
+        3
+      ]
+    },
+    {
+      "episode": 5,
+      "seed": 795806,
+      "return": 500.0,
+      "length": 500,
+      "terminated": false,
+      "truncated": true,
+      "action_mode": "greedy",
+      "model_type": "reinforce_policy",
+      "checkpoint": "cartpole_reinforce_value_baseline.pt",
+      "frame_count": 501,
+      "frame_shape": [
+        400,
+        600,
+        3
+      ]
+    }
+  ],
+  "average_return": 500.0,
+  "average_length": 500.0
+}

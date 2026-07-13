@@ -1,0 +1,15 @@
+{
+  "dataset": "GTSRB",
+  "train_images": 26640,
+  "test_images": 12630,
+  "classes": 43,
+  "minimum_train_class_count": 150,
+  "maximum_train_class_count": 1500,
+  "minimum_width": 25,
+  "maximum_width": 243,
+  "mean_width": 50.93378378378378,
+  "minimum_height": 25,
+  "maximum_height": 225,
+  "mean_height": 50.36512762762763,
+  "source": "notebooks/01_eda_and_feature_baseline.ipynb, output cells 7, 13 and 18"
+}
