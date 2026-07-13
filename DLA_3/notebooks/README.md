@@ -7,5 +7,3 @@ Si consiglia Linux o WSL. Eseguire o consultare i notebook finali nel seguente o
 3. `03_a2c_cartpole_lunarlander.ipynb` — validazione A2C su CartPole e studio finale LunarLander.
 
 La relazione finale è in [`../README.md`](../README.md) e le evidenze leggere dei risultati si trovano in [`../results/`](../results/). Training, sweep estesi e rendering sono attivabili esplicitamente tramite flag `RUN_*`. La valutazione dei checkpoint viene eseguita soltanto quando il checkpoint locale esiste.
-
-Il notebook esplorativo è conservato in `../exploratory/00_esperimenti_di_prova_a2c.ipynb`. Non appartiene all'ordine finale di esecuzione e le prime prove che contiene non sono usate come risultati principali.

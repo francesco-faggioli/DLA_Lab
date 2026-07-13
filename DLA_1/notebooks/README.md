@@ -9,5 +9,3 @@ Eseguire o consultare i notebook finali nel seguente ordine:
 5. `03b_retrieval_training_free_classification.ipynb` — cosine retrieval, Precision@K, mAP e NMC.
 
 La relazione finale è in [`../README.md`](../README.md). Le evidenze leggere si trovano in [`../results/`](../results/). Training lunghi ed estrazione delle feature richiedono flag espliciti `RUN_* = True`; W&B resta disattivato a meno di impostare `ENABLE_WANDB = True` dopo un login manuale.
-
-Il notebook storico di prova è stato spostato in `../exploratory/Esperimenti_di_prova.ipynb`. Viene conservato per documentare la provenienza, ma non appartiene a questo ordine di esecuzione e non è fonte delle metriche principali.

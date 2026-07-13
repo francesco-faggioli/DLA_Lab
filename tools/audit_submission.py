@@ -15,6 +15,9 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED_PARTS = {
     ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
     "data",
     "wandb",
     "artifacts",
@@ -406,6 +409,153 @@ def markdown_link_checks(files: list[Path]) -> list[str]:
     return errors
 
 
+def _markdown_text(path: Path) -> str:
+    if path.suffix == ".md":
+        return path.read_text(encoding="utf-8")
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    return "\n".join(
+        "".join(cell.get("source", []))
+        for cell in notebook.get("cells", [])
+        if cell.get("cell_type") == "markdown"
+    )
+
+
+def markdown_latex_checks(files: list[Path]) -> list[str]:
+    """Controlla delimitatori e struttura minima del LaTeX testuale."""
+
+    errors: list[str] = []
+    markdown_files = [path for path in files if path.suffix in {".md", ".ipynb"}]
+    for path in markdown_files:
+        text = _markdown_text(path)
+        relative = path.relative_to(ROOT)
+        if "\\[" in text or "\\]" in text:
+            errors.append(f"Delimitatore LaTeX non GitHub/Jupyter in {relative}: usare $$")
+        if text.count("$$") % 2:
+            errors.append(f"Numero dispari di delimitatori $$ in {relative}")
+            continue
+        for formula in re.findall(r"\$\$(.*?)\$\$", text, flags=re.DOTALL):
+            if not formula.strip():
+                errors.append(f"Formula display vuota in {relative}")
+            if formula.count("{") != formula.count("}"):
+                errors.append(f"Parentesi graffe LaTeX sbilanciate in {relative}")
+            if formula.count("\\left") != formula.count("\\right"):
+                errors.append(f"Coppie \\left/\\right sbilanciate in {relative}")
+            if re.search(r"(?m)^\s*={2,}\s*$", formula):
+                errors.append(f"Separatore Markdown incorporato in una formula: {relative}")
+
+        prose = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+        prose = re.sub(r"`[^`\n]*`", "", prose)
+        prose = re.sub(r"\$\$.*?\$\$", "", prose, flags=re.DOTALL)
+        inline_dollars = len(re.findall(r"(?<!\\)\$", prose))
+        if inline_dollars % 2:
+            errors.append(f"Delimitatori LaTeX inline sbilanciati in {relative}")
+    return errors
+
+
+def language_and_formula_checks() -> list[str]:
+    errors: list[str] = []
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    ai_usage = (ROOT / "AI_USAGE.md").read_text(encoding="utf-8")
+    conduct = (ROOT / "CODE_OF_CONDUCT.md").read_text(encoding="utf-8")
+
+    for token in [
+        "## Panoramica del portfolio",
+        "## Risultati principali",
+        "## Struttura della repository",
+        "## Ordine di esecuzione consigliato",
+        "## Modalità di consultazione rapida",
+        "## Modalità di esperimento completo",
+        "## Politica di conservazione degli output",
+        "## Politica per dataset e checkpoint",
+        "## Riproducibilità",
+        "## Uso dell'IA e integrità accademica",
+        "## Codice di condotta",
+    ]:
+        if token not in root_readme:
+            errors.append(f"Sezione italiana mancante in README.md: {token}")
+    if "## Portfolio overview" in root_readme or "## Main results" in root_readme:
+        errors.append("README.md contiene ancora intestazioni inglesi")
+
+    for token in [
+        "# Uso di strumenti assistiti dall'IA",
+        "chiarimento concettuale",
+        "tracce ufficiali",
+        "debug",
+        "commenti e delle docstring",
+        "struttura della repository",
+        "presentazione matematica",
+        "ogni formula è stata verificata",
+        "Verifica umana e responsabilità",
+        "Nessuna metrica, figura, formula, iperparametro, fonte o esercizio completato è stato inventato",
+    ]:
+        if token.lower() not in ai_usage.lower():
+            errors.append(f"Dichiarazione italiana mancante in AI_USAGE.md: {token}")
+    if "Code of Conduct" not in conduct.splitlines()[0]:
+        errors.append("CODE_OF_CONDUCT.md non risulta in inglese o ha titolo inatteso")
+
+    for relative in ["DLA_1/README.md", "DLA_2/README.md", "DLA_3/README.md"]:
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for token in ["## Panoramica", "## Obiettivi", "## Conclusione"]:
+            if token not in text:
+                errors.append(f"Sezione italiana mancante in {relative}: {token}")
+
+    required_formula_tokens = {
+        "DLA_1/README.md": [
+            r"\mathcal{L}_{\mathrm{CE}}",
+            r"\mathcal{L}_{\mathrm{WCE}}",
+            r"\operatorname{cos}(q,x)",
+            "P@K",
+            r"\mu_c",
+            "nearest_mean_classifier",
+        ],
+        "DLA_2/README.md": [
+            r"p(y=c\mid x)",
+            r"\frac{\alpha}{r}BA",
+            "Trainable \\%",
+            r"\ell_{x,t}=\exp(\tau)",
+            r"\sigma(\alpha)",
+            "CLIPAdapter.forward",
+        ],
+        "DLA_3/README.md": [
+            r"G_t=\sum",
+            r"\mathcal{L}_{\mathrm{REINFORCE}}",
+            r"A_t=G_t-V_\phi",
+            r"\delta_t=r_t+\gamma",
+            "SmoothL1",
+            r"\pi_T(a\mid s)",
+            "numpy.std",
+            r"\mathbb{1}[R_i\ge 200]",
+        ],
+        "DLA_1/notebooks/03b_retrieval_training_free_classification.ipynb": [
+            "math-dla1-retrieval",
+            "math-dla1-nmc",
+        ],
+        "DLA_2/notebooks/03_efficient_finetuning_sentiment.ipynb": [
+            "math-dla2-lora",
+            "math-dla2-partial-freezing",
+        ],
+        "DLA_2/notebooks/04_clip_adapter_imagenet_sketch.ipynb": [
+            "math-dla2-clip-similarity",
+            "math-dla2-adapter",
+        ],
+        "DLA_3/notebooks/01_cartpole_reinforce_evaluation.ipynb": ["math-dla3-reinforce"],
+        "DLA_3/notebooks/02_cartpole_value_baseline.ipynb": ["math-dla3-value-baseline"],
+        "DLA_3/notebooks/03_a2c_cartpole_lunarlander.ipynb": [
+            "math-dla3-a2c-gae",
+            "math-dla3-temperature",
+            "math-dla3-evaluation",
+        ],
+    }
+    for relative, tokens in required_formula_tokens.items():
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in text:
+                errors.append(
+                    f"Formula o collegamento formula-codice mancante in {relative}: {token}"
+                )
+    return errors
+
+
 def content_checks(files: list[Path]) -> list[str]:
     errors: list[str] = []
     forbidden = {
@@ -426,6 +576,27 @@ def content_checks(files: list[Path]) -> list[str]:
         "W&B key": re.compile(r"(?i)WANDB_API_KEY\s*[=:]\s*[A-Za-z0-9]{20,}"),
         "generic bearer": re.compile(r"(?i)Authorization\s*:\s*Bearer\s+[A-Za-z0-9._-]{20,}"),
     }
+    local_user = "che" + "cc"
+    linux_user = "francesco" + "faggioli"
+    exploratory_name = "explor" + "atory"
+    forbidden_patterns = {
+        "percorso personale Windows": re.compile(
+            r"(?i)c:[\\/]+users[\\/]+" + re.escape(local_user)
+        ),
+        "percorso personale WSL": re.compile(r"(?i)/mnt/c/users/" + re.escape(local_user)),
+        "riferimento cloud personale": re.compile("(?i)one" + "drive"),
+        "account Linux personale": re.compile("(?i)" + linux_user + r"@|/home/" + linux_user),
+        "notebook exploratory rimosso": re.compile(
+            "(?i)Esperimenti_"
+            + "di_prova|00_esperimenti_"
+            + "di_prova_a2c|"
+            + exploratory_name
+            + "/"
+        ),
+        "riferimento vietato": re.compile(
+            "(?i)Gianni" + "Moretti|DeepLearning" + r"ApplicationLAB|github\.com/Gianni" + "Moretti"
+        ),
+    }
     for path in files:
         if path.name == "audit_submission.py":
             continue
@@ -438,9 +609,17 @@ def content_checks(files: list[Path]) -> list[str]:
         for token, reason in forbidden.items():
             if token in text:
                 errors.append(f"{reason}: {path.relative_to(ROOT)} contiene {token!r}")
+        for reason, pattern in forbidden_patterns.items():
+            if pattern.search(text):
+                errors.append(f"{reason}: {path.relative_to(ROOT)}")
         for reason, pattern in secret_patterns.items():
             if pattern.search(text):
                 errors.append(f"Possibile credenziale {reason}: {path.relative_to(ROOT)}")
+        task_marker = r"(?i)\b(?:" + "TO" + "DO|FIX" + "ME)\b"
+        if path.name not in {"ASSIGNMENT.md", "CODE_OF_CONDUCT.md"} and re.search(
+            task_marker, text
+        ):
+            errors.append(f"Segnaposto di lavoro residuo: {path.relative_to(ROOT)}")
     return errors
 
 
@@ -470,6 +649,8 @@ def required_checks() -> list[str]:
         "DLA_3/ASSIGNMENT.ipynb",
         "DLA_3/Lab_" + "3.ipynb",
         "_archive",
+        "DLA_1/" + "explor" + "atory",
+        "DLA_3/" + "explor" + "atory",
     ]:
         if (ROOT / forbidden).exists():
             errors.append(f"Duplicato/obsoleto ancora presente: {forbidden}")
@@ -501,9 +682,13 @@ def main() -> int:
         + numeric_checks()
         + notebook_errors
         + markdown_link_checks(files)
+        + markdown_latex_checks(files)
+        + language_and_formula_checks()
         + content_checks(files)
         + image_checks(files)
     )
+    if notebook_count != 15:
+        errors.append(f"Numero di notebook pubblici inatteso: {notebook_count} != 15")
     large_public = sorted(
         (
             (path.stat().st_size, path.relative_to(ROOT))

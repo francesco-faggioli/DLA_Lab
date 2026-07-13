@@ -31,6 +31,10 @@ NOTEBOOKS = [
 ]
 IGNORED_PARTS = {
     ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".smoke_deps",
     "data",
     "artifacts",
     "checkpoints",
@@ -137,8 +141,12 @@ def main() -> int:
             f"La directory temporanea esiste già; indicarne una nuova con --output: {output_root}"
         )
     output_root.mkdir(parents=True)
-    runtime_root = Path("/tmp") / f"dla_lab_smoke_runtime_{os.getpid()}"
+    runtime_root = output_root / f".runtime_{os.getpid()}"
     runtime_root.mkdir(parents=True)
+    source_roots = [str(ROOT / lab / "src") for lab in ("DLA_1", "DLA_2", "DLA_3")]
+    existing_pythonpath = os.environ.get("PYTHONPATH")
+    if existing_pythonpath:
+        source_roots.append(existing_pythonpath)
     os.environ.update(
         {
             "HF_HUB_OFFLINE": "1",
@@ -150,6 +158,8 @@ def main() -> int:
             "PYTHONPYCACHEPREFIX": str(runtime_root / "pycache"),
             "MPLCONFIGDIR": str(runtime_root / "matplotlib"),
             "JUPYTER_RUNTIME_DIR": str(runtime_root / "jupyter_runtime"),
+            "IPYTHONDIR": str(runtime_root / "ipython"),
+            "PYTHONPATH": os.pathsep.join(source_roots),
         }
     )
 

@@ -25,9 +25,59 @@ La relazione si basa sugli output preservati nei notebook e sulle evidenze legge
 
 ## Fondamenti teorici
 
-Una CNN pre-addestrata può essere usata come mappa fissa \(f(x)\) oppure adattata al compito di destinazione. La baseline stabile addestra una SVM lineare sulla rappresentazione penultima di ResNet. In questo modo la qualità della rappresentazione pre-addestrata è separata dall'ottimizzazione della rete neurale. Il fine-tuning minimizza invece la cross-entropy su GTSRB e può adattare le feature di alto livello, ma è più sensibile a learning rate, layer addestrabili, sbilanciamento delle classi, augmentation e selezione del checkpoint.
+Una CNN pre-addestrata può essere usata come mappa fissa $f(x)$ oppure adattata al compito di destinazione. La baseline stabile addestra una SVM lineare sulla rappresentazione penultima di ResNet; il fine-tuning modifica invece parte della rete minimizzando la cross-entropy.
 
-Per il retrieval, le feature della query e della gallery sono confrontate tramite cosine similarity, distanza euclidea o dot product. Precision@K misura la frazione delle prime K immagini recuperate che condividono l'etichetta della query. Average Precision riassume l'intero ranking. NMC sostituisce gli esempi individuali della gallery con un centroide per classe e predice il centroide più vicino.
+Per un batch di $N$ esempi, la loss usata dalla baseline head-only è
+
+$$
+\mathcal{L}_{\mathrm{CE}}
+=
+-\frac{1}{N}\sum_{i=1}^{N}\log p_{\theta}(y_i\mid x_i).
+$$
+
+$x_i$ è l'immagine, $y_i$ la classe corretta e $p_\theta(y_i\mid x_i)$ la probabilità assegnata dal modello. Penalizzare il logaritmo della probabilità corretta rende costose le predizioni sicure ma errate. La formula corrisponde a `nn.CrossEntropyLoss` costruita da `build_loss` in [`losses.py`](src/dla_lab1/losses.py) e usata da `train_model`.
+
+Gli screening con class imbalance usano anche pesi inversi alla frequenza. Se $n_c$ è il numero di esempi della classe $c$, $C$ il numero di classi e $N=\sum_c n_c$, il codice calcola
+
+$$
+w_c=\frac{N}{C\,n_c},
+\qquad
+\mathcal{L}_{\mathrm{WCE}}
+=
+-\frac{1}{N}\sum_{i=1}^{N}w_{y_i}\log p_{\theta}(y_i\mid x_i).
+$$
+
+Le classi rare ricevono quindi un peso maggiore. Il calcolo reale è in `class_weights_from_labels` (`np.bincount`, conteggio minimo pari a uno), mentre `build_loss` passa il tensore a `nn.CrossEntropyLoss`. Il miglior modello finale usa cross-entropy con label smoothing, non la variante pesata.
+
+Nel retrieval, query $q$ e campione di gallery $x$ sono confrontati mediante
+
+$$
+\operatorname{cos}(q,x)
+=
+\frac{q^\top x}{\lVert q\rVert_2\lVert x\rVert_2}.
+$$
+
+Dopo la normalizzazione $\hat q=q/\lVert q\rVert_2$ e $\hat x=x/\lVert x\rVert_2$, il valore coincide con $\hat q^\top\hat x$. Un valore vicino a uno indica direzioni simili indipendentemente dalla norma. `cosine_similarity_matrix` in [`features.py`](src/dla_lab1/features.py) applica `F.normalize` e il prodotto matriciale.
+
+La qualità dei primi $K$ risultati è misurata da
+
+$$
+P@K
+=
+\frac{1}{K}\sum_{j=1}^{K}\mathbb{1}[y_{(j)}=y_q],
+$$
+
+dove $y_q$ è la classe della query, $y_{(j)}$ quella del vicino in posizione $j$ e $\mathbb{1}$ vale uno quando le etichette coincidono. `retrieval_precision_at_k` calcola prima la precisione per query e poi la media sulle query; $P@1$ verifica il solo primo vicino, mentre valori maggiori valutano una porzione più ampia del ranking.
+
+Il Nearest-Mean Classifier comprime infine ogni classe nel centroide
+
+$$
+\mu_c=\frac{1}{N_c}\sum_{i:y_i=c}z_i,
+\qquad
+\hat y=\arg\max_c\operatorname{cos}(z,\mu_c).
+$$
+
+$z_i$ sono le feature della gallery e $N_c$ il loro numero per la classe $c$. `class_feature_centroids` usa la media aritmetica e `nearest_mean_classifier` sceglie il centroide con cosine similarity massima. Non viene addestrato un nuovo classificatore, ma una singola media può rappresentare male classi con più modalità visive. I dettagli operativi sono nel notebook [`03b_retrieval_training_free_classification.ipynb`](notebooks/03b_retrieval_training_free_classification.ipynb).
 
 ## Dataset e analisi esplorativa
 
@@ -186,7 +236,6 @@ Il comando legge evidenze versionate e output dei notebook; non addestra alcun m
 | --- | --- |
 | `DLA_1.ipynb` | Indice del laboratorio leggibile su GitHub |
 | `notebooks/` | Notebook finali eseguiti nell'ordine degli esercizi |
-| `exploratory/` | Notebook storico di prove, preservato ma escluso dal percorso finale |
 | `src/dla_lab1/` | Implementazione riutilizzabile |
 | `scripts/` | Entry point per ambiente, training, estrazione e valutazione checkpoint |
 | `config/config.yaml` | Registro centrale degli esperimenti e valori predefiniti |
@@ -197,7 +246,6 @@ Il comando legge evidenze versionate e output dei notebook; non addestra alcun m
 
 | File | Contenuto unico | Citato nella relazione finale | Necessario per la consegna | Decisione |
 | --- | ---: | ---: | ---: | --- |
-| `exploratory/Esperimenti_di_prova.ipynb` | Sì: prove storiche e output W&B | Solo come provenienza | No | Conservato fuori da `notebooks/`; non è fonte dei risultati principali |
 
 ## Dipendenze principali
 

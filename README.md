@@ -1,65 +1,59 @@
 # Deep Learning Applications — Portfolio dei laboratori
 
-**Corso:** Deep Learning Applications
-
+**Corso:** Deep Learning Applications<br>
 **Autore:** Francesco Faggioli
 
-Questa repository raccoglie i tre laboratori svolti per il corso. Il percorso procede dal transfer learning per la visione artificiale all'adattamento dei Transformer e dei modelli multimodali, fino ai metodi policy-gradient. I laboratori sono studi separati: **solo DLA 3 riguarda il Deep Reinforcement Learning** e le rispettive metriche non devono essere confrontate come se appartenessero a un unico compito.
+Questa repository contiene i tre laboratori completati per il corso. Il portfolio si sviluppa dal transfer learning per la computer vision, passando per l'adattamento dei Transformer e dei modelli visione-linguaggio, fino al reinforcement learning con metodi policy-gradient. I laboratori sono studi distinti: **solo DLA 3 riguarda il Deep Reinforcement Learning** e le rispettive metriche non devono essere confrontate come se descrivessero un unico compito.
 
-L'obiettivo principale di questa versione finale è la verificabilità. Gli output eseguiti dei notebook restano visibili, le metriche principali sono replicate in file leggeri nelle cartelle `results/` e ogni relazione distingue l'evidenza osservata dall'interpretazione.
+La repository finale è progettata per essere consultata direttamente su GitHub. Gli output eseguiti dei notebook restano visibili, le metriche principali sono replicate in file leggeri nella cartella `results/`, le operazioni costose sono disabilitate per impostazione predefinita e ogni relazione distingue le evidenze misurate dalle interpretazioni. I fondamenti matematici sono documentati nelle relazioni dei laboratori e accanto alle corrispondenti implementazioni nei notebook.
 
-## Repository in sintesi
+## Panoramica del portfolio
 
-| Laboratorio | Argomento | Esercizi principali | Metodi principali | Notebook finale | Relazione dettagliata |
-| --- | --- | --- | --- | --- | --- |
-| DLA 1 | Riconoscimento dei segnali stradali GTSRB | EDA, baseline stabile, fine-tuning, pipeline riutilizzabile, retrieval | Feature ResNet pre-addestrate, SVM, fine-tuning selettivo, cosine retrieval, NMC | [`DLA_1.ipynb`](DLA_1/DLA_1.ipynb) | [`DLA_1/README.md`](DLA_1/README.md) |
-| DLA 2 | Transformer e adattamento visione-linguaggio | Baseline di sentiment, fine-tuning completo ed efficiente, adattamento CLIP | DistilBERT, SVM lineare, Hugging Face Trainer, LoRA, congelamento parziale, CLIP-Adapter | [`DLA_2.ipynb`](DLA_2/DLA_2.ipynb) | [`DLA_2/README.md`](DLA_2/README.md) |
-| DLA 3 | Deep Reinforcement Learning | Valutazione REINFORCE, value baseline, A2C su due ambienti | Monte Carlo policy gradient, baseline appresa, A2C vettorizzato, selezione della temperatura della policy | [`DLA_3.ipynb`](DLA_3/DLA_3.ipynb) | [`DLA_3/README.md`](DLA_3/README.md) |
+| Laboratorio | Argomento | Metodi principali | Notebook principale della consegna | Relazione dettagliata |
+| --- | --- | --- | --- | --- |
+| DLA 1 | Riconoscimento dei segnali stradali GTSRB | Feature ResNet preaddestrate, SVM, fine-tuning selettivo, retrieval con similarità coseno, NMC | [`DLA_1.ipynb`](DLA_1/DLA_1.ipynb) | [`DLA_1/README.md`](DLA_1/README.md) |
+| DLA 2 | Transformer e adattamento visione-linguaggio | DistilBERT, Hugging Face Trainer, LoRA, congelamento parziale, CLIP-Adapter | [`DLA_2.ipynb`](DLA_2/DLA_2.ipynb) | [`DLA_2/README.md`](DLA_2/README.md) |
+| DLA 3 | Deep Reinforcement Learning | REINFORCE, baseline di valore appresa, A2C vettorizzato, selezione della temperatura della policy | [`DLA_3.ipynb`](DLA_3/DLA_3.ipynb) | [`DLA_3/README.md`](DLA_3/README.md) |
 
 I testi ufficiali degli esercizi sono disponibili in [`DLA_1/ASSIGNMENT.md`](DLA_1/ASSIGNMENT.md), [`DLA_2/ASSIGNMENT.md`](DLA_2/ASSIGNMENT.md) e [`DLA_3/ASSIGNMENT.md`](DLA_3/ASSIGNMENT.md).
 
-## Flusso di lavoro complessivo
-
-**DLA 1** parte da una rappresentazione pre-addestrata fissa. Le feature di ResNet-18 forniscono una baseline SVM stabile prima di passare a fine-tuning supervisionato, esperimenti guidati da configurazione, sbilanciamento delle classi, data augmentation, tracciamento degli esperimenti e retrieval senza addestramento.
-
-**DLA 2** trasferisce la stessa idea a dati linguistici e multimodali. Gli embedding congelati di DistilBERT definiscono una baseline; il fine-tuning completo viene poi confrontato con LoRA e congelamento parziale. Un esperimento separato su ImageNet-Sketch valuta CLIP in presenza di domain shift e adatta soltanto un piccolo MLP.
-
-**DLA 3** cambia paradigma di apprendimento. Inizia con REINFORCE episodico, aggiunge una value baseline per ridurre la varianza del gradiente e implementa aggiornamenti actor-critic con ambienti vettorizzati. CartPole convalida l'implementazione; LunarLander mette in evidenza l'instabilità e le esigenze di valutazione del problema di controllo più difficile.
-
 ## Risultati principali
 
-| Lab | Esperimento | Metrica | Risultato | Evidenza |
+| Laboratorio | Esperimento | Metrica | Risultato | Evidenza versionata |
 | --- | --- | ---: | ---: | --- |
-| DLA 1 | Feature ResNet-18 + SVM | Accuracy di test GTSRB | 0.6412 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv), notebook della baseline eseguito |
-| DLA 1 | Fine-tuning selettivo migliorato | Accuracy di test GTSRB | 0.8025 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv), notebook dei miglioramenti eseguito |
-| DLA 1 | Cosine retrieval | Precision@1 | 0.4812 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv), notebook del retrieval eseguito |
-| DLA 2 | Fine-tuning completo di DistilBERT | Accuracy di test Rotten Tomatoes | 0.8443 | [`sentiment_results.csv`](DLA_2/results/sentiment_results.csv) |
-| DLA 2 | LoRA | Accuracy di test / quota addestrabile | 0.8386 / 1.09% | [`sentiment_results.csv`](DLA_2/results/sentiment_results.csv) |
-| DLA 2 | CLIP-Adapter, bottleneck 128 | Accuracy ImageNet-Sketch | 0.5241 | [`clip_results.csv`](DLA_2/results/clip_results.csv) |
-| DLA 3 | REINFORCE con value baseline | Return periodico finale CartPole | 500.0 | [`method_summary.csv`](DLA_3/results/method_summary.csv) |
-| DLA 3 | A2C, policy campionata con T=0.75 | Return medio / success rate LunarLander | 165.76 / 56.0% | [`lunarlander_final_evaluation.json`](DLA_3/results/lunarlander_final_evaluation.json) |
+| DLA 1 | Feature ResNet-18 + SVM | Accuratezza sul test GTSRB | 0.6412 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv) |
+| DLA 1 | Baseline con fine-tuning della sola testa | Accuratezza sul test GTSRB | 0.5038 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv) |
+| DLA 1 | Fine-tuning selettivo migliorato | Accuratezza sul test GTSRB | 0.8025 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv) |
+| DLA 1 | Retrieval con coseno / NMC | Precision@1 / accuratezza | 0.4812 / 0.4185 | [`test_metrics.csv`](DLA_1/results/test_metrics.csv) |
+| DLA 2 | Fine-tuning completo di DistilBERT | Accuratezza sul test Rotten Tomatoes | 0.8443 | [`sentiment_results.csv`](DLA_2/results/sentiment_results.csv) |
+| DLA 2 | LoRA | Accuratezza sul test / quota addestrabile | 0.8386 / 1.09% | [`sentiment_results.csv`](DLA_2/results/sentiment_results.csv) |
+| DLA 2 | Congelamento parziale | Accuratezza sul test | 0.8377 | [`sentiment_results.csv`](DLA_2/results/sentiment_results.csv) |
+| DLA 2 | CLIP-Adapter, bottleneck 128 | Accuratezza su ImageNet-Sketch | 0.5241 | [`clip_results.csv`](DLA_2/results/clip_results.csv) |
+| DLA 3 | REINFORCE / baseline di valore | Miglior ritorno periodico su CartPole | 489.35 / 500.00 | [`method_summary.csv`](DLA_3/results/method_summary.csv) |
+| DLA 3 | A2C CartPole | Ritorno medio greedy | 494.51 | [`method_summary.csv`](DLA_3/results/method_summary.csv) |
+| DLA 3 | A2C LunarLander, campionamento a T=0.75 | Ritorno medio / tasso di successo | 165.76 / 56.0% | [`lunarlander_final_evaluation.json`](DLA_3/results/lunarlander_final_evaluation.json) |
 
-Queste righe riassumono output già eseguiti; non costituiscono nuove affermazioni sperimentali calcolate durante la revisione. In DLA 1, il risultato di test `0.8025` è legato alla valutazione finale fissa del notebook, mentre le cronologie di validazione esportate separatamente descrivono le run di sviluppo denominate. Le accuracy di DLA 2 appartengono a compiti e dataset differenti. La relazione dettagliata di DLA 3 riporta sia la tendenza centrale sia la variabilità.
+Questi valori riassumono esecuzioni precedenti e non sono stati ricalcolati durante la revisione della documentazione. Il README di ogni laboratorio ne discute la provenienza, la variabilità, i risultati negativi e i limiti.
 
 ## Panoramica visuale
 
 ### DLA 1 — classificazione GTSRB
 
-![Confronto dell'accuracy di test GTSRB](DLA_1/figures/gtsrb_test_accuracy_comparison.svg)
+![Confronto dell'accuratezza sul test GTSRB](DLA_1/figures/gtsrb_test_accuracy_comparison.svg)
 
-Il fine-tuning selettivo ha prodotto il miglior risultato finale sul test. La baseline head-only ha ottenuto prestazioni inferiori alla SVM su feature fisse, mostrando che sostituire e addestrare soltanto la testa di classificazione non era sufficiente per questo domain shift. Fonte: [`DLA_1/results/test_metrics.csv`](DLA_1/results/test_metrics.csv).
+Il fine-tuning selettivo ha prodotto il miglior risultato finale sul test. La baseline neurale con la sola testa addestrabile è rimasta al di sotto della SVM applicata alle feature fisse, motivando l'adattamento selettivo dell'ultimo blocco residuo.
 
-### DLA 2 — adattamento per il sentiment
+### DLA 2 — adattamento per l'analisi del sentiment
 
-![Accuracy di test su Rotten Tomatoes](DLA_2/figures/sentiment_test_accuracy.svg)
+![Accuratezza sul test Rotten Tomatoes](DLA_2/figures/sentiment_test_accuracy.svg)
 
-Il fine-tuning completo ha raggiunto la maggiore accuracy di test, ma LoRA ne ha conservato quasi interamente il valore ottimizzando circa l'1.09% dei parametri del modello. Fonte: [`DLA_2/results/sentiment_results.csv`](DLA_2/results/sentiment_results.csv).
+Il fine-tuning completo ha ottenuto l'accuratezza più alta, mentre LoRA ne ha conservato gran parte ottimizzando circa l'1.09% dei parametri del modello.
 
-### DLA 3 — valutazione LunarLander
+### DLA 3 — valutazione su LunarLander
 
-![Analisi della temperatura della policy LunarLander](DLA_3/figures/lunarlander_temperature_sweep.svg)
+![Analisi della temperatura della policy su LunarLander](DLA_3/figures/lunarlander_temperature_sweep.svg)
 
-Le ampie deviazioni standard mostrano perché un singolo rollout o il return di training non sono stati usati per la selezione del modello. La temperatura `0.75` è stata scelta tramite un punteggio di affidabilità, non perché massimizzasse soltanto il return medio. Fonte: [`DLA_3/results/lunarlander_temperature_sweep.csv`](DLA_3/results/lunarlander_temperature_sweep.csv).
+Le deviazioni standard elevate giustificano una valutazione ripetuta, anziché la selezione del checkpoint sulla base di un singolo rollout. La policy finale usa azioni campionate con temperatura `0.75`.
 
 ## Struttura della repository
 
@@ -72,14 +66,14 @@ DLA_Lab/
 ├── environment.yml
 ├── pyproject.toml
 ├── tools/
-│   └── build_report_assets.py
+│   ├── audit_submission.py
+│   ├── build_report_assets.py
+│   └── smoke_notebooks.py
 ├── DLA_1/
 │   ├── DLA_1.ipynb
 │   ├── ASSIGNMENT.md
 │   ├── README.md
-│   ├── config/  figures/  results/
-│   ├── notebooks/  scripts/  src/
-│   └── exploratory/
+│   └── config/  figures/  results/  notebooks/  scripts/  src/
 ├── DLA_2/
 │   ├── DLA_2.ipynb
 │   ├── ASSIGNMENT.md
@@ -89,26 +83,25 @@ DLA_Lab/
     ├── DLA_3.ipynb
     ├── ASSIGNMENT.md
     ├── README.md
-    ├── config/  figures/  results/
-    ├── notebooks/  scripts/  src/
-    └── exploratory/
+    └── config/  figures/  results/  notebooks/  scripts/  src/
 ```
 
-Dataset, checkpoint dei modelli, run W&B, directory di output Hugging Face, cache e artefatti locali completi sono deliberatamente esclusi da questo albero e da Git.
+I dataset, i checkpoint dei modelli, le esecuzioni W&B, le directory di output di Hugging Face, le cache e gli artefatti locali completi sono deliberatamente esclusi da Git.
 
-## Come esaminare la consegna
+## Ordine di esecuzione consigliato
 
-1. Leggere questa panoramica, quindi aprire il README dettagliato di ciascun laboratorio.
-2. Aprire i tre notebook-indice principali: [`DLA_1.ipynb`](DLA_1/DLA_1.ipynb), [`DLA_2.ipynb`](DLA_2/DLA_2.ipynb) e [`DLA_3.ipynb`](DLA_3/DLA_3.ipynb).
-3. Seguire i notebook dettagliati nell'ordine degli esercizi indicato in ciascun `notebooks/README.md`.
-4. Esaminare gli output preservati nei notebook e le evidenze leggere nella relativa directory `results/`.
-5. Considerare `exploratory/` soltanto come contesto storico: non fa parte del percorso di esecuzione finale.
+1. Leggere questa panoramica del portfolio e il README dettagliato di ogni laboratorio.
+2. Aprire i tre notebook indice: [`DLA_1.ipynb`](DLA_1/DLA_1.ipynb), [`DLA_2.ipynb`](DLA_2/DLA_2.ipynb) e [`DLA_3.ipynb`](DLA_3/DLA_3.ipynb).
+3. Seguire i notebook tecnici nell'ordine indicato nel rispettivo `notebooks/README.md`.
+4. Consultare gli output conservati e le corrispondenti evidenze CSV/JSON nella cartella `results/`.
 
-Training lunghi, estrazione delle feature, rivalutazione finale sul test, logging W&B e run LunarLander sono disattivati per impostazione predefinita quando è esposto un flag `RUN_*` o `ENABLE_WANDB`. Gli output esistenti sono conservati per la revisione; l'attivazione di un flag costituisce una richiesta esplicita di ricalcolo dell'esperimento.
+## Installazione
 
-## Installazione ed esecuzione
+I tre file di configurazione dell'ambiente hanno ruoli distinti e coerenti:
 
-`requirements.txt` è la lista canonica e multipiattaforma delle dipendenze. Include anche l'installazione editable della repository, così i package `dla_lab1`, `dla_lab2` e `dla_lab3` sono importabili senza modificare `sys.path`. `environment.yml` crea un ambiente Conda e delega l'installazione dei pacchetti allo stesso file. `pyproject.toml` dichiara soltanto i metadati minimi dei package locali e la configurazione di formatter e linter: non introduce una lista di dipendenze alternativa.
+- `requirements.txt` è l'elenco canonico delle dipendenze di runtime e include `-e .`, così i tre pacchetti locali vengono installati in modalità modificabile;
+- `environment.yml` crea l'ambiente Conda e installa tramite pip i requisiti canonici;
+- `pyproject.toml` definisce il progetto locale installabile, l'individuazione dei pacchetti, i metadati del progetto e la configurazione di Black/Ruff. Non definisce un elenco concorrente di dipendenze di runtime.
 
 ### Windows PowerShell
 
@@ -138,28 +131,59 @@ conda activate DLA2026
 python -m jupyter lab
 ```
 
-Linux/WSL è consigliato per DLA 3 perché le dipendenze Box2D e di rendering richieste da LunarLander sono più affidabili in quell'ambiente. CUDA è facoltativo; l'esecuzione su CPU è supportata, ma l'estrazione completa delle feature e il training sono sensibilmente più lenti.
+Per DLA 3 è consigliato Linux/WSL, perché le dipendenze di Box2D e del rendering di LunarLander sono più affidabili in quell'ambiente. CUDA è facoltativo; l'esecuzione su CPU è supportata, anche se l'estrazione completa delle feature e l'addestramento risultano sensibilmente più lenti.
 
-## Riproducibilità e artefatti
+## Modalità di consultazione rapida
 
-- I seed globali sono `42` per DLA 1 e DLA 2 e `2112` per DLA 3. I seed degli ambienti e delle valutazioni sono derivati deterministicamente nell'implementazione.
-- I download dei dataset non sono versionati. Le relazioni registrano le dimensioni esatte degli split osservate nei notebook eseguiti.
-- I checkpoint (`*.pt`, `*.safetensors` e cartelle checkpoint di Hugging Face) restano locali a causa delle dimensioni.
-- Metriche finali leggere, cronologie e input dei grafici sono versionati in `results/`.
-- [`tools/build_report_assets.py`](tools/build_report_assets.py) rigenera gli SVG delle relazioni ed estrae output PNG selezionati dai notebook versionati senza ripetere il training.
-- La consultazione rapida usa gli output salvati nei notebook e `results/`; l'esecuzione completa richiede dataset, download dei modelli, eventuali credenziali W&B e l'attivazione esplicita dei flag di training.
-- La repository non dichiara una riproducibilità bit per bit tra versioni differenti di CUDA, driver, PyTorch o Gymnasium. Per questo la valutazione stocastica di RL è riportata su più episodi.
+La configurazione inclusa nel commit è pensata per una consultazione sicura:
+
+- vengono caricati le metriche CSV/JSON e i grafici salvati;
+- gli output conservati nei notebook restano visibili su GitHub;
+- i flag per addestramento, valutazione completa, estrazione delle feature, W&B, rendering, esportazione video e sovrascrittura dei checkpoint restano disabilitati;
+- l'apertura o l'esecuzione dei notebook non installa automaticamente alcun pacchetto.
+
+Lo smoke test non distruttivo esegue copie dei notebook pubblici:
+
+```bash
+python tools/smoke_notebooks.py --kernel drl --output /tmp/dla_lab_smoke
+```
+
+## Modalità di esperimento completo
+
+La riproduzione completa richiede i dataset non versionati, il download dei modelli, i checkpoint locali ove applicabile, risorse di calcolo adeguate e l'attivazione esplicita dei relativi flag `RUN_*`. L'abilitazione di un flag di addestramento o sovrascrittura costituisce una richiesta intenzionale di ricalcolare un esperimento; non è necessaria per consultare le evidenze presentate.
+
+## Politica di conservazione degli output
+
+Gli output eseguiti fanno parte della consegna. La repository conserva tabelle scientifiche, metriche, curve, report di classificazione, risultati di retrieval, valutazioni di reinforcement learning e riepiloghi visuali leggeri degli episodi. I pesanti payload delle animazioni incorporate sono esclusi, mentre il codice locale per il rendering resta disponibile dietro flag disabilitati.
+
+## Politica per dataset e checkpoint
+
+- I download dei dataset non sono versionati.
+- I checkpoint (`*.pt`, `*.pth`, `*.safetensors` e le cartelle di checkpoint di Hugging Face) restano locali a causa delle loro dimensioni.
+- Le metriche finali leggere, le cronologie, i dati di selezione e gli input per i grafici sono versionati nella cartella `results/`.
+- [`tools/build_report_assets.py`](tools/build_report_assets.py) rigenera i grafici delle relazioni a partire dalle evidenze versionate, senza ripetere l'addestramento.
+
+## Riproducibilità
+
+- I seed globali sono `42` per DLA 1 e DLA 2 e `2112` per DLA 3; i seed degli ambienti e delle valutazioni sono derivati in modo deterministico nell'implementazione.
+- Le relazioni riportano le dimensioni esatte delle suddivisioni dei dataset osservate nei notebook eseguiti.
+- I risultati stocastici di reinforcement learning sono valutati su più episodi e ne viene riportata la dispersione.
+- Non si garantisce la riproducibilità bit per bit tra versioni differenti di CUDA, driver, PyTorch, Gymnasium o sistema operativo.
 
 ## Uso dell'IA e integrità accademica
 
-ChatGPT e OpenAI Codex hanno supportato chiarimenti concettuali, debugging, organizzazione del codice, documentazione e controlli di coerenza. L'autore ha eseguito e revisionato gli esperimenti; gli output dell'IA non sono stati accettati come evidenza sperimentale. La dichiarazione completa è in [`AI_USAGE.md`](AI_USAGE.md). Le regole di condotta e la responsabilità autoriale sono indicate in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+ChatGPT e OpenAI Codex hanno supportato il chiarimento concettuale, il debug, l'organizzazione del codice, la documentazione, la presentazione matematica e i controlli di coerenza. Ogni formula è stata verificata rispetto all'implementazione e gli output dell'IA non sono stati accettati come evidenza sperimentale. La dichiarazione completa è disponibile in [`AI_USAGE.md`](AI_USAGE.md).
+
+## Codice di condotta
+
+Le norme di condotta, l'integrità accademica, l'attribuzione della paternità e la responsabilità sono descritte in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## Riferimenti
 
-- [Documentazione PyTorch](https://pytorch.org/docs/stable/index.html)
-- [Documentazione Torchvision](https://pytorch.org/vision/stable/index.html)
-- [Documentazione Hugging Face](https://huggingface.co/docs)
-- [Documentazione Gymnasium](https://gymnasium.farama.org/)
-- [Documentazione Weights & Biases](https://docs.wandb.ai/)
+- [Documentazione di PyTorch](https://pytorch.org/docs/stable/index.html)
+- [Documentazione di Torchvision](https://pytorch.org/vision/stable/index.html)
+- [Documentazione di Hugging Face](https://huggingface.co/docs)
+- [Documentazione di Gymnasium](https://gymnasium.farama.org/)
+- [Documentazione di Weights & Biases](https://docs.wandb.ai/)
 
-I riferimenti specifici a dataset, articoli, API e implementazioni sono elencati nelle relazioni dettagliate dei singoli laboratori.
+I dataset, gli articoli, le API, i dettagli matematici e i riferimenti implementativi specifici di ogni laboratorio sono elencati nelle rispettive relazioni e nei notebook.

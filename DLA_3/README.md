@@ -19,6 +19,88 @@ Questo è l'unico laboratorio di Deep Reinforcement Learning del portfolio. Impl
 | Esercizio 3.1: A2C | Aggiornamenti actor-critic e ambienti vettorizzati | [`03_a2c_cartpole_lunarlander.ipynb`](notebooks/03_a2c_cartpole_lunarlander.ipynb) | Completato |
 | Esercizio 3.1: ambiente più difficile | Valutazione di checkpoint, modalità delle azioni e temperatura su LunarLander | Stesso notebook | Completato |
 
+## Fondamenti matematici dei metodi utilizzati
+
+Per una traiettoria di durata $T$, il return Monte Carlo dal tempo $t$ è
+
+$$
+G_t=\sum_{k=0}^{T-t-1}\gamma^k r_{t+k}.
+$$
+
+$r_{t+k}$ è la ricompensa futura e $\gamma$ il fattore di sconto. `compute_returns` in [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) implementa la stessa ricorrenza a ritroso. REINFORCE minimizza la media negativa del policy gradient e sottrae il bonus di entropia:
+
+$$
+\mathcal{L}_{\mathrm{REINFORCE}}
+=-\frac{1}{T}\sum_t \widetilde G_t\log\pi_\theta(a_t\mid s_t)
+-\beta\,\frac{1}{T}\sum_t\mathcal{H}(\pi_\theta(\cdot\mid s_t)),
+$$
+
+$$
+\mathcal{H}(\pi)=-\sum_a\pi(a\mid s)\log\pi(a\mid s).
+$$
+
+$\widetilde G_t$ è $G_t$ grezzo oppure il return standardizzato $(G_t-\mu_G)/(s_G+10^{-8})$; `prepare_policy_target` usa la deviazione campionaria predefinita di `torch.std`. L'entropia premia policy meno concentrate durante il training.
+
+Con la baseline appresa, l'advantage e le loss effettive sono
+
+$$
+A_t=G_t-V_\phi(s_t),
+$$
+
+$$
+\mathcal{L}_{\mathrm{policy}}
+=-\frac{1}{T}\sum_t A_t\log\pi_\theta(a_t\mid s_t)-\beta\,\overline{\mathcal H},
+\qquad
+\mathcal{L}_{\mathrm{value}}
+=\frac{1}{T}\sum_t\left(G_t-V_\phi(s_t)\right)^2.
+$$
+
+La baseline riduce la varianza senza sostituire il return; `reinforce_with_value_baseline` stacca l'advantage dal grafo della rete di valore, può standardizzarlo e usa `F.mse_loss` per il critic.
+
+A2C usa la Generalized Advantage Estimation. Con maschera di continuazione $m_t$:
+
+$$
+\delta_t=r_t+\gamma m_tV_\phi(s_{t+1})-V_\phi(s_t),
+\qquad
+A_t=\delta_t+\gamma\lambda m_tA_{t+1},
+\qquad
+R_t^{\mathrm{target}}=A_t+V_\phi(s_t).
+$$
+
+`compute_gae` implementa queste ricorrenze. Nel training single-environment $m_t=0$ solo per `terminated`, quindi un episodio `truncated` mantiene il bootstrap; nel training vettorizzato corrente la maschera usa `terminated OR truncated`. Questa differenza implementativa è dichiarata invece di attribuire al codice una gestione ideale non presente.
+
+La loss A2C effettiva è
+
+$$
+\mathcal{L}_{\mathrm{A2C}}
+=\underbrace{-\overline{\log\pi_\theta(a_t\mid s_t)A_t}-c_e\overline{\mathcal H}}_{\mathcal{L}_{\mathrm{actor}}}
++c_v\underbrace{\operatorname{SmoothL1}\!\left(V_\phi(s_t),R_t^{\mathrm{target}}\right)}_{\mathcal{L}_{\mathrm{critic}}}.
+$$
+
+I coefficienti $c_v$ e $c_e$ sono rispettivamente `value_coef` e il coefficiente di entropia, che può decadere fino a `entropy_coef_min`. La scelta `SmoothL1`, anziché MSE, corrisponde a `train_a2c_single_env` e `train_a2c_vectorized`.
+
+Durante il temperature sweep, i logit $z_a$ producono
+
+$$
+\pi_T(a\mid s)=\frac{\exp(z_a/T)}{\sum_j\exp(z_j/T)}.
+$$
+
+$T<1$ concentra la distribuzione, $T>1$ la rende più esplorativa e la modalità greedy usa direttamente l'argmax. `run_a2c_episode` applica `Categorical(logits=logits / temperature)`; la configurazione finale usa campionamento con `T=0.75`.
+
+Le valutazioni su $N$ episodi usano la media e la deviazione standard di popolazione (`numpy.std`, `ddof=0`):
+
+$$
+\bar R=\frac{1}{N}\sum_{i=1}^{N}R_i,
+\qquad
+\sigma_R=\sqrt{\frac{1}{N}\sum_{i=1}^{N}(R_i-\bar R)^2},
+$$
+
+$$
+\text{Success rate}=\frac{1}{N}\sum_{i=1}^{N}\mathbb{1}[R_i\ge 200].
+$$
+
+La soglia 200 è codificata in `evaluate_a2c_policy`; media, dispersione e successo evitano di descrivere la policy con un singolo rollout. I notebook tecnici collegano ogni formula alle celle di training o valutazione pertinenti.
+
 ## Ambiente e definizione del problema
 
 ### CartPole-v1
@@ -35,11 +117,7 @@ La relazione usa return `>= 200` come criterio di successo, coerentemente con la
 
 ## REINFORCE
 
-La policy è un MLP con due layer nascosti (`4 → 128 → 128 → 2`) seguito da una distribuzione categorica. Vengono campionate traiettorie complete. I return scontati sono calcolati all'indietro e, nella variante standard, standardizzati all'interno dell'episodio. L'obiettivo della policy è
-
-\[
-L_{policy} = -\sum_t \log \pi_\theta(a_t|s_t)\,G_t - \beta H(\pi_\theta(\cdot|s_t)).
-\]
+La policy è un MLP con due layer nascosti (`4 → 128 → 128 → 2`) seguito da una distribuzione categorica. Vengono campionate traiettorie complete. I return scontati sono calcolati all'indietro e, nella variante standard, standardizzati all'interno dell'episodio secondo le formule precedenti.
 
 La media mobile originale dei return di training è utile per la visualizzazione, ma costituisce una regola di selezione debole: combina dati generati da policy in evoluzione ed è sensibile a episodi ad alta varianza. Il notebook rivisto valuta la policy corrente in modalità greedy ogni 50 episodi di training su 20 episodi nuovi e salva il miglior checkpoint di valutazione.
 
@@ -67,13 +145,7 @@ La variante con return standardizzati ha raggiunto il miglior valore medio perio
 
 ## Value baseline appresa
 
-Una seconda rete stima \(V_\phi(s_t)\). La policy usa l'advantage sganciato dal gradiente
-
-\[
-A_t = G_t - V_\phi(s_t),
-\]
-
-mentre il critic minimizza l'errore quadratico medio tra valori predetti e return Monte Carlo. Sottrarre la baseline dipendente dallo stato non cambia il policy gradient atteso, ma può ridurne la varianza. Gli ottimizzatori di policy e valore sono separati.
+Una seconda rete stima $V_\phi(s_t)$. La policy usa l'advantage sganciato dal gradiente, mentre il critic minimizza l'errore quadratico medio tra valori predetti e return Monte Carlo. Sottrarre la baseline dipendente dallo stato non cambia il policy gradient atteso, ma può ridurne la varianza. Gli ottimizzatori di policy e valore sono separati.
 
 | Parametro | Configurazione value baseline |
 | --- | ---: |
@@ -119,14 +191,7 @@ I seed sono stati generati senza reinserimento dalla base `11112`; ogni rollout 
 
 ## Advantage Actor-Critic (A2C)
 
-A2C aggiorna actor e critic da brevi rollout vettorizzati. Per ogni transizione, il target temporal-difference e l'advantage sono
-
-\[
-y_t = r_t + \gamma (1-d_t)V_\phi(s_{t+1}), \qquad
-A_t = y_t - V_\phi(s_t).
-\]
-
-L'actor massimizza la log-probabilità dell'azione pesata per l'advantage sganciato più l'entropia; il critic minimizza l'errore sul valore. Gli ambienti vettorizzati raccolgono più traiettorie per aggiornamento. Le mask `terminated`/`truncated` corrette sono importanti: uno stato realmente terminale non deve eseguire bootstrap, mentre il raggiungimento del limite temporale viene tracciato separatamente.
+A2C aggiorna actor e critic da rollout single-environment o vettorizzati. L'implementazione usa GAE, advantage normalizzabili, bonus di entropia e critic Smooth L1 come descritto nei fondamenti matematici. Gli ambienti vettorizzati raccolgono più traiettorie per aggiornamento; la differenza tra le maschere single-environment e vettorizzate è documentata esplicitamente.
 
 ### A2C su CartPole
 
@@ -248,7 +313,6 @@ La configurazione centrale è [`config/lab3_defaults.yaml`](config/lab3_defaults
 | `notebooks/01_*` | REINFORCE e valutazione rivista |
 | `notebooks/02_*` | Confronto con value baseline |
 | `notebooks/03_*` | Studio finale A2C CartPole/LunarLander |
-| `exploratory/` | Prove A2C storiche, separate dai notebook finali |
 | `src/dla_lab3/` | Moduli policy-gradient, A2C, valutazione, plotting e ambiente |
 | `scripts/` | Utilità per ambiente e checkpoint |
 | `config/lab3_defaults.yaml` | Impostazioni di ambiente, algoritmo, selezione ed esperimenti |
@@ -259,7 +323,6 @@ La configurazione centrale è [`config/lab3_defaults.yaml`](config/lab3_defaults
 
 | File | Contenuto unico | Citato dalla relazione finale | Necessario per la consegna | Decisione |
 | --- | ---: | ---: | ---: | --- |
-| `exploratory/00_esperimenti_di_prova_a2c.ipynb` | Sì: prime prove con reti separate e raffinamenti | Solo come contesto storico | No | Conservato fuori da `notebooks/`; non fa parte dell'ordine finale di esecuzione |
 
 ## Dipendenze principali
 

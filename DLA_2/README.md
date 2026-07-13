@@ -25,11 +25,51 @@ I due gruppi di accuracy sono riportati separatamente perché appartengono a dat
 
 ## Fondamenti teorici
 
-DistilBERT trasforma il testo tokenizzato in hidden state contestuali. `input_ids` seleziona le voci del vocabolario; `attention_mask` distingue i token reali dal padding. Il primo vettore nascosto corrisponde a `[CLS]` ed è usato come rappresentazione fissa della frase per la baseline SVM. Per la classificazione end-to-end, `AutoModelForSequenceClassification` aggiunge una testa specifica e aggiorna il backbone con cross-entropy.
+DistilBERT trasforma il testo tokenizzato in hidden state contestuali. Per la classificazione end-to-end, i logit $z_c$ della testa sono trasformati in probabilità mediante
 
-LoRA mantiene congelate le matrici pre-addestrate e apprende aggiornamenti a basso rango. Questa implementazione agisce sulle proiezioni di attenzione `q_lin` e `v_lin` di DistilBERT. Il congelamento parziale è un controllo più semplice: embedding e primi quattro blocchi Transformer restano congelati, mentre i blocchi successivi e il classificatore sono ottimizzati.
+$$
+p(y=c\mid x)=\frac{\exp(z_c)}{\sum_{j=1}^{C}\exp(z_j)},
+\qquad
+\mathcal{L}_{\mathrm{CE}}=-\frac{1}{N}\sum_{i=1}^{N}\log p(y_i\mid x_i).
+$$
 
-CLIP allinea gli embedding di immagini e testo. La classificazione zero-shot confronta ogni immagine con prototipi testuali derivati dai prompt. CLIP-Adapter inserisce un piccolo MLP residuale sulle feature immagine congelate, consentendo l'adattamento al dominio senza aggiornare gli encoder CLIP.
+$C=2$ è il numero di classi sentiment e $N$ la dimensione del batch. La classe scelta è quella con probabilità massima; la cross-entropy penalizza una bassa probabilità della label corretta. `AutoModelForSequenceClassification` restituisce questa loss quando `Trainer` riceve le label, mentre `compute_sklearn_metrics` calcola le metriche sulle predizioni finali. La baseline SVM usa invece il vettore `[CLS]` congelato e non questa softmax.
+
+LoRA mantiene congelata una matrice pre-addestrata $W\in\mathbb{R}^{k\times d}$ e apprende un aggiornamento a basso rango:
+
+$$
+W'=W+\frac{\alpha}{r}BA,
+\qquad
+A\in\mathbb{R}^{r\times d},
+\quad
+B\in\mathbb{R}^{k\times r}.
+$$
+
+Con $r\ll\min(d,k)$ si aggiornano molte meno variabili. `lora_sequence_classifier_init` configura PEFT con `r=8`, `lora_alpha=16`, dropout `0.1`, bias disattivato e target `q_lin`/`v_lin`. La quota riportata è calcolata da `count_parameters`:
+
+$$
+\text{Trainable \%}=100\,\frac{N_{\mathrm{trainable}}}{N_{\mathrm{total}}}=1.09\%.
+$$
+
+Nel congelamento parziale, $\theta=\theta_{\mathrm{frozen}}\cup\theta_{\mathrm{trainable}}$ e $\nabla_{\theta_{\mathrm{frozen}}}\mathcal{L}=0$: `requires_grad=False` è applicato agli embedding e ai primi quattro blocchi, mentre gli altri parametri vengono ottimizzati.
+
+CLIP confronta embedding immagine e testo normalizzati:
+
+$$
+s(x,t)=\frac{f_I(x)^\top f_T(t)}{\lVert f_I(x)\rVert_2\lVert f_T(t)\rVert_2},
+\qquad
+\ell_{x,t}=\exp(\tau)\,\hat f_I(x)^\top\hat f_T(t).
+$$
+
+$f_I$ e $f_T$ sono gli encoder congelati, mentre `model.logit_scale.exp()` fornisce $\exp(\tau)$. `evaluate_zero_shot` e `evaluate_precomputed_features` implementano esattamente normalizzazione, prodotto matriciale e scala dei logit.
+
+L'adapter applicato alle feature immagine è
+
+$$
+h'=h+\sigma(\alpha)\,W_{\mathrm{up}}\operatorname{ReLU}(W_{\mathrm{down}}h).
+$$
+
+Il collegamento residuo conserva la feature originale; $W_{\mathrm{down}}$ riduce la dimensione nel bottleneck e $W_{\mathrm{up}}$ la ripristina. Questa è la `CLIPAdapter.forward` effettiva: usa ReLU, un gate `sigmoid` addestrabile e bottleneck 64 o 128. Il risultato migliore usa 128, adattando un piccolo MLP senza aggiornare gli encoder CLIP. I notebook tecnici forniscono le derivazioni operative e i conteggi osservati.
 
 ## Parte I — Analisi del sentiment su Rotten Tomatoes
 
