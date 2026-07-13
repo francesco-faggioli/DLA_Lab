@@ -18,12 +18,12 @@ def extract_features(model, dataloader, device: torch.device) -> tuple[torch.Ten
     Passa ogni batch nella rete in modalita' inferenza e salva su CPU
     sia i vettori di feature sia le label corrispondenti.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch usato come estrattore di feature.
         dataloader: DataLoader che restituisce immagini e label.
         device: Device su cui eseguire l'inferenza.
 
-    Returns:
+    Restituisce:
         Tupla `(features, labels)` su CPU, con una riga di feature per immagine.
     """
     model = model.to(device)
@@ -46,11 +46,11 @@ def save_feature_cache(path: str | Path, **tensors: torch.Tensor) -> Path:
     In questo modo non dobbiamo rieseguire ResNet-18 ogni volta che apriamo
     il notebook.
 
-    Args:
+    Argomenti:
         path: File `.pt` in cui salvare la cache.
         **tensors: Tensori da salvare, ad esempio feature e label.
 
-    Returns:
+    Restituisce:
         Path del file salvato.
     """
     path = Path(path)
@@ -65,26 +65,28 @@ def load_feature_cache(path: str | Path) -> dict[str, torch.Tensor]:
 
     E' la strada piu' veloce per rifare solo la parte SVM della baseline.
 
-    Args:
+    Argomenti:
         path: File `.pt` generato da `save_feature_cache`.
 
-    Returns:
+    Restituisce:
         Dizionario con i tensori salvati nella cache.
     """
     return torch.load(path, map_location="cpu")
 
 
-def cosine_similarity_matrix(query_features: torch.Tensor, gallery_features: torch.Tensor) -> torch.Tensor:
+def cosine_similarity_matrix(
+    query_features: torch.Tensor, gallery_features: torch.Tensor
+) -> torch.Tensor:
     """
     Serve a calcolare similarita' coseno tra query e gallery.
 
     Sara' utile nella parte retrieval, non nella baseline SVM.
 
-    Args:
+    Argomenti:
         query_features: Feature delle immagini query.
         gallery_features: Feature delle immagini nella gallery.
 
-    Returns:
+    Restituisce:
         Matrice `[num_query, num_gallery]` con similarita' coseno.
     """
     query = F.normalize(query_features.float(), dim=1)
@@ -105,13 +107,13 @@ def retrieval_precision_at_k(
     quante hanno la stessa classe della query. E' la metrica piu' semplice
     per controllare se il retrieval sta recuperando esempi corretti.
 
-    Args:
+    Argomenti:
         sim_matrix: Matrice di similarita' query-gallery.
         query_labels: Label vere delle query.
         gallery_labels: Label vere della gallery.
         k_values: Valori di K da valutare.
 
-    Returns:
+    Restituisce:
         Dizionario `{K: precisione_media}`.
     """
     results = {}
@@ -139,7 +141,7 @@ def compare_similarity_precision_at_k(
     query per non creare tre matrici enormi in memoria. Nel notebook 3.2 lo
     usiamo per calcolare le metriche correnti senza tabelle precompilate.
 
-    Args:
+    Argomenti:
         query_features: Feature delle immagini query.
         gallery_features: Feature delle immagini gallery.
         query_labels: Label vere delle query.
@@ -147,7 +149,7 @@ def compare_similarity_precision_at_k(
         k_values: Valori di K da valutare.
         chunk_size: Numero di query elaborate per blocco.
 
-    Returns:
+    Restituisce:
         Dizionario annidato `{metrica: {K: precisione_media}}`.
     """
     max_k = max(k_values)
@@ -201,13 +203,13 @@ def retrieval_mean_average_precision(
     AP media per classe, utile per capire quali segnali stradali sono
     rappresentati meglio dal backbone.
 
-    Args:
+    Argomenti:
         sim_matrix: Matrice di similarita' query-gallery.
         query_labels: Label vere delle query.
         gallery_labels: Label vere della gallery.
         num_classes: Numero di classi GTSRB.
 
-    Returns:
+    Restituisce:
         Dizionario con `mAP`, `macro_mAP_by_class` e AP media per classe.
     """
     sim_np = sim_matrix.detach().cpu().numpy()
@@ -249,7 +251,7 @@ def retrieval_mean_average_precision_chunked(
     poi usa Average Precision considerando rilevanti le immagini della stessa classe.
     Questo e' piu' adatto a notebook riproducibili, perche' riduce il picco di memoria.
 
-    Args:
+    Argomenti:
         query_features: Feature delle immagini query.
         gallery_features: Feature delle immagini gallery.
         query_labels: Label vere delle query.
@@ -257,7 +259,7 @@ def retrieval_mean_average_precision_chunked(
         num_classes: Numero di classi GTSRB.
         chunk_size: Numero di query valutate per blocco.
 
-    Returns:
+    Restituisce:
         Dizionario con `mAP`, `macro_mAP_by_class` e AP media per classe.
     """
     query_norm = F.normalize(query_features.float(), dim=1)
@@ -300,12 +302,12 @@ def class_feature_centroids(
     Questo e' il passaggio di "training" del Nearest-Mean Classifier: non usa
     gradienti, ma riassume ogni classe con il centroide delle sue immagini.
 
-    Args:
+    Argomenti:
         features: Feature delle immagini di training/gallery.
         labels: Label associate alle feature.
         num_classes: Numero di classi da rappresentare.
 
-    Returns:
+    Restituisce:
         Tensore con un centroide medio per ogni classe.
     """
     centroids = []
@@ -325,12 +327,12 @@ def nearest_mean_classifier(
 
     E' una baseline training-free per la parte retrieval/NMC.
 
-    Args:
+    Argomenti:
         train_features: Feature usate per calcolare i centroidi di classe.
         train_labels: Label delle feature di training/gallery.
         query_features: Feature delle immagini da classificare.
 
-    Returns:
+    Restituisce:
         Tensore con la classe predetta per ogni query.
     """
     classes = torch.unique(train_labels).sort().values

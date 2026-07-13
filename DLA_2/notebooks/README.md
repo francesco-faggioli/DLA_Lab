@@ -1,12 +1,12 @@
-# DLA 2 notebook order
+# Ordine dei notebook DLA 2
 
-Run or inspect the final notebooks in this order:
+Eseguire o consultare i notebook finali nel seguente ordine:
 
-1. `01_sentiment_dataset_tokenizer_baseline.ipynb` — dataset, tokenizer, frozen DistilBERT features, and SVM.
-2. `02_distilbert_full_finetuning.ipynb` — full sequence-classification fine-tuning.
-3. `03_efficient_finetuning_sentiment.ipynb` — LoRA and partial freezing.
-4. `04_clip_adapter_imagenet_sketch.ipynb` — zero-shot CLIP, prompt study, and CLIP-Adapter.
+1. `01_sentiment_dataset_tokenizer_baseline.ipynb` — dataset, tokenizer, feature DistilBERT congelate e SVM.
+2. `02_distilbert_full_finetuning.ipynb` — fine-tuning completo per sequence classification.
+3. `03_efficient_finetuning_sentiment.ipynb` — LoRA e congelamento parziale.
+4. `04_clip_adapter_imagenet_sketch.ipynb` — CLIP zero-shot, studio dei prompt e CLIP-Adapter.
 
-The final report is [`../README.md`](../README.md) and the public numerical evidence is under [`../results/`](../results/). In the submitted quick mode, model downloads, feature extraction, preprocessing, and training are skipped unless the corresponding `RUN_*` flag is explicitly enabled. Existing executed outputs remain visible.
+La relazione finale è in [`../README.md`](../README.md) e le evidenze numeriche pubbliche si trovano in [`../results/`](../results/). Nella modalità rapida di consegna, download dei modelli, estrazione delle feature, preprocessing e training vengono saltati a meno che il relativo flag `RUN_*` sia abilitato esplicitamente. Gli output già eseguiti restano visibili.
 
-The original runs used `DLA2026-transformers` for notebooks 01–03 and `clip_lora` for notebook 04. The root `requirements.txt` is the canonical submission dependency list.
+Le run originali hanno usato `DLA2026-transformers` per i notebook 01–03 e `clip_lora` per il notebook 04. Il `requirements.txt` nella root è la lista canonica delle dipendenze per la consegna.

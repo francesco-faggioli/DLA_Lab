@@ -3,7 +3,6 @@ from __future__ import annotations
 import torch
 import torchvision.transforms.v2 as T
 
-
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -15,12 +14,12 @@ def build_transforms(image_size: int = 64, train: bool = False, augmentation: st
     Per la baseline usa resize, conversione a tensore e normalizzazione ImageNet,
     cioe' le trasformazioni coerenti con una ResNet pre-addestrata.
 
-    Args:
+    Argomenti:
         image_size: Dimensione finale quadrata delle immagini.
         train: Se True, abilita eventuali augmentation per il training.
         augmentation: Tipo di augmentation: `none`, `aggressive`, `conservative`, `safe` o `spatial`.
 
-    Returns:
+    Restituisce:
         Composizione torchvision di trasformazioni da applicare alle immagini.
     """
     resize_size = (

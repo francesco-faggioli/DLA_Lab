@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -22,13 +22,13 @@ def load_gtsrb(data_root: str | Path, split: str, transform=None, download: bool
     immagini grezze, sia con trasformazioni per preparare le immagini
     all'estrazione delle feature.
 
-    Args:
+    Argomenti:
         data_root: Cartella radice in cui torchvision trova o salva GTSRB.
         split: Split da caricare, `train` oppure `test`.
         transform: Trasformazioni opzionali da applicare alle immagini.
         download: Se True, prova a scaricare il dataset tramite torchvision.
 
-    Returns:
+    Restituisce:
         Dataset torchvision `GTSRB` pronto per essere usato in un DataLoader.
     """
     return GTSRB(root=str(data_root), split=split, transform=transform, download=download)
@@ -41,10 +41,10 @@ def gtsrb_base_dir(data_root: str | Path) -> Path:
     Torchvision usa come root `data`, ma i CSV e le cartelle estratte sono
     dentro `data/gtsrb`. Questa funzione gestisce entrambi i casi.
 
-    Args:
+    Argomenti:
         data_root: Cartella `data` o direttamente cartella `data/gtsrb`.
 
-    Returns:
+    Restituisce:
         Path della cartella che contiene `GTSRB/Training` e i CSV ufficiali.
     """
     root = Path(data_root)
@@ -67,10 +67,10 @@ def read_training_metadata(data_root: str | Path) -> pd.DataFrame:
     Lo usiamo per calcolare dimensioni delle immagini, numero di classi
     e distribuzione delle etichette senza aprire manualmente ogni immagine.
 
-    Args:
+    Argomenti:
         data_root: Cartella radice del dataset.
 
-    Returns:
+    Restituisce:
         DataFrame con le righe dei CSV di training e la classe di appartenenza.
     """
     train_dir = gtsrb_base_dir(data_root) / "GTSRB" / "Training"
@@ -92,10 +92,10 @@ def read_test_metadata(data_root: str | Path) -> pd.DataFrame:
     Lo usiamo per verificare il numero di immagini e per documentare
     la struttura del dataset.
 
-    Args:
+    Argomenti:
         data_root: Cartella radice del dataset.
 
-    Returns:
+    Restituisce:
         DataFrame letto da `GT-final_test.csv`.
     """
     return pd.read_csv(gtsrb_base_dir(data_root) / "GT-final_test.csv", sep=";")
@@ -108,10 +108,10 @@ def dataset_targets(dataset) -> np.ndarray:
     Lo usiamo nelle parti di training/split, per costruire train e validation
     mantenendo la distribuzione delle classi sotto controllo.
 
-    Args:
+    Argomenti:
         dataset: Dataset torchvision o compatibile che restituisce coppie immagine/label.
 
-    Returns:
+    Restituisce:
         Array NumPy con una label intera per ogni immagine del dataset.
     """
     if hasattr(dataset, "_samples"):
@@ -136,13 +136,13 @@ def stratified_track_split(
     che immagini quasi identiche finiscano sia in train sia in validation,
     dividiamo gruppi consecutivi della stessa classe invece dei singoli file.
 
-    Args:
+    Argomenti:
         labels: Label del training set nello stesso ordine del dataset.
         val_split: Percentuale approssimativa da assegnare alla validation.
         track_size: Numero di immagini consecutive trattate come gruppo.
         seed: Seed usato per rendere lo split riproducibile.
 
-    Returns:
+    Restituisce:
         Due array di indici: training e validation.
     """
     labels = np.asarray(labels, dtype=int)
@@ -190,13 +190,13 @@ def split_class_summary(
     Nel notebook di fine-tuning lo usiamo per verificare esplicitamente che
     anche la validation contenga almeno un esempio per ciascuna classe GTSRB.
 
-    Args:
+    Argomenti:
         labels: Label complete del dataset di training.
         train_idx: Indici assegnati al training split.
         val_idx: Indici assegnati alla validation split.
         num_classes: Numero totale di classi attese.
 
-    Returns:
+    Restituisce:
         DataFrame con conteggi train/validation e rapporto di validation per classe.
     """
     labels = np.asarray(labels, dtype=int)
@@ -224,11 +224,11 @@ def missing_classes_in_split(split_summary: pd.DataFrame, column: str = "val_cou
     E' una piccola funzione di controllo: se la lista restituita e' vuota,
     significa che lo split contiene almeno un esempio per ogni classe.
 
-    Args:
+    Argomenti:
         split_summary: DataFrame prodotto da `split_class_summary`.
         column: Colonna da controllare, ad esempio `val_count` o `train_count`.
 
-    Returns:
+    Restituisce:
         Lista degli ID classe con conteggio pari a zero nella colonna scelta.
     """
     missing = split_summary.loc[split_summary[column] == 0, "class_id"]
@@ -242,11 +242,11 @@ def class_weights_from_labels(labels: Sequence[int], num_classes: int) -> torch.
     Lo useremo nelle parti successive se vogliamo compensare lo sbilanciamento
     del dataset con WeightedCrossEntropy o FocalLoss.
 
-    Args:
+    Argomenti:
         labels: Label usate per stimare la frequenza delle classi.
         num_classes: Numero totale di classi.
 
-    Returns:
+    Restituisce:
         Tensore PyTorch con un peso per classe.
     """
     counts = np.bincount(np.asarray(labels, dtype=int), minlength=num_classes)
@@ -272,7 +272,7 @@ def build_dataloaders(
     In questo primo notebook non e' indispensabile, ma sara' utile per la parte
     di fine-tuning per non riscrivere sempre split e preprocessing.
 
-    Args:
+    Argomenti:
         data_root: Cartella radice del dataset.
         image_size: Dimensione finale delle immagini.
         batch_size: Numero di immagini per batch.
@@ -283,7 +283,7 @@ def build_dataloaders(
         pin_memory: Se True, ottimizza il trasferimento CPU-GPU con CUDA.
         augmentation: Tipo di augmentation da applicare solo al training set.
 
-    Returns:
+    Restituisce:
         Dizionario con DataLoader train/val/test, indici dello split, summary e pesi classe.
     """
     train_transform = build_transforms(image_size=image_size, train=True, augmentation=augmentation)
@@ -306,7 +306,9 @@ def build_dataloaders(
         common["persistent_workers"] = True
         common["prefetch_factor"] = 2
 
-    train_loader = DataLoader(Subset(train_full, train_idx), shuffle=True, drop_last=False, **common)
+    train_loader = DataLoader(
+        Subset(train_full, train_idx), shuffle=True, drop_last=False, **common
+    )
     val_loader = DataLoader(Subset(val_full, val_idx), shuffle=False, drop_last=False, **common)
     test_loader = DataLoader(test_set, shuffle=False, drop_last=False, **common)
 
@@ -329,21 +331,21 @@ def build_retrieval_dataloaders(
     pin_memory: bool = True,
 ) -> dict[str, DataLoader]:
     """
-    Serve a creare i DataLoader per Exercise 3.2.
+    Serve a creare i DataLoader per l'Esercizio 3.2.
 
     In retrieval usiamo tutto il training set come gallery e tutto il test set
     come query. Non facciamo augmentation, perche' non stiamo allenando il
     modello: vogliamo solo estrarre feature stabili da immagini preprocessate
     come richiesto dai backbone ImageNet.
 
-    Args:
+    Argomenti:
         data_root: Cartella radice del dataset.
         image_size: Dimensione finale delle immagini.
         batch_size: Numero di immagini per batch.
         num_workers: Processi usati dal DataLoader.
         pin_memory: Se True, ottimizza il trasferimento CPU-GPU con CUDA.
 
-    Returns:
+    Restituisce:
         Dizionario con DataLoader `gallery` e `query`.
     """
     transform = build_transforms(image_size=image_size, train=False)

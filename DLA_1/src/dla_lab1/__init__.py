@@ -1,5 +1,5 @@
-"""Reusable utilities for DLA Lab 1.
+"""Utilità riutilizzabili per DLA Lab 1.
 
-Submodules intentionally avoid eager imports here so lightweight helpers such
-as configuration loading do not require importing PyTorch or NumPy.
+I sottomoduli evitano intenzionalmente import anticipati: funzioni leggere come
+il caricamento della configurazione non richiedono così l'import di PyTorch o NumPy.
 """

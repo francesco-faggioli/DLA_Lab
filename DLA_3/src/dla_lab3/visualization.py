@@ -17,23 +17,23 @@ from .policy_gradient import policy_from_env, preprocess_observation, select_act
 
 
 def show_frames(frames: list[Any], interval: int = 30, max_display_frames: int = 300) -> None:
-    """Display environment RGB frames inside a notebook.
+    """Mostra nel notebook i frame RGB di un ambiente.
 
-    Args:
-        frames: RGB arrays returned by Gymnasium `render_mode="rgb_array"`.
-        interval: Delay between frames in milliseconds.
-        max_display_frames: Maximum number of frames kept in the animation.
+    Argomenti:
+        frames: Array RGB restituiti da Gymnasium con `render_mode="rgb_array"`.
+        interval: Ritardo tra frame in millisecondi.
+        max_display_frames: Numero massimo di frame mantenuti nell'animazione.
 
-    What it does:
-        Downsamples long episodes if needed and renders an HTML animation in the
-        current notebook cell.
+    Operazione:
+        Sottocampiona gli episodi lunghi e produce un'animazione HTML nella cella
+        corrente. Non scrive file.
 
-    Outputs:
-        None. Displays an animation.
+    Output:
+        Nessuno; visualizza l'animazione tramite IPython.
     """
 
     if not frames:
-        print("No frames collected.")
+        print("Nessun frame raccolto.")
         return
 
     if len(frames) > max_display_frames:
@@ -65,7 +65,7 @@ def run_cartpole_visual_episodes(
 ) -> dict[str, Any]:
     """Esegue episodi visuali CartPole riproducibili senza aggiornare il modello.
 
-    Args:
+    Argomenti:
         checkpoint_path: Checkpoint della policy REINFORCE selezionata.
         model_type: Tipo esplicito di architettura. La funzione accetta
             `reinforce_policy`, usato anche dalla variante value-baseline.
@@ -76,11 +76,11 @@ def run_cartpole_visual_episodes(
         summary_path: JSON leggero opzionale in cui salvare solo le statistiche.
         hidden_size: Ampiezza dei layer nascosti della policy salvata.
 
-    Returns:
+    Restituisce:
         Dizionario con checkpoint, modalita', seed e statistiche per episodio.
         I frame non vengono inclusi nel valore restituito o nel JSON.
 
-    Raises:
+    Eccezioni:
         FileNotFoundError: Se il checkpoint non esiste.
         ValueError: Se modello, modalita' o numero di episodi non sono validi.
     """
@@ -102,7 +102,9 @@ def run_cartpole_visual_episodes(
     try:
         policy = policy_from_env(env, hidden_size=hidden_size)
         payload = torch.load(checkpoint, map_location="cpu")
-        state_dict = payload.get("model_state_dict", payload) if isinstance(payload, dict) else payload
+        state_dict = (
+            payload.get("model_state_dict", payload) if isinstance(payload, dict) else payload
+        )
         policy.load_state_dict(state_dict)
         policy.eval()
         obs_scale = observation_scale("CartPole-v1")
@@ -189,13 +191,31 @@ def run_lunar_visual_episodes(
 ) -> dict[str, Any]:
     """Esegue e mostra episodi LunarLander senza includere frame nel JSON.
 
-    Ogni episodio usa il seed `seed_start + indice`, registra terminazione e
-    troncamento, ed esegue la policy in modalita' di inferenza. Il checkpoint
-    non viene modificato.
+    Argomenti:
+        checkpoint_path: Percorso del checkpoint A2C selezionato.
+        temperature: Temperatura usata nel campionamento delle azioni.
+        mode: Modalità di selezione, `sample` oppure `greedy`.
+        n_episodes: Numero di episodi visuali da eseguire.
+        seed_start: Primo seed della sequenza deterministica degli episodi.
+        show_inline: Se True, mostra ogni animazione nel notebook.
+        summary_path: Percorso JSON opzionale per le sole statistiche leggere.
+
+    Operazione:
+        Ogni episodio usa il seed `seed_start + indice`, registra terminazione e
+        troncamento, ed esegue la policy in modalità di inferenza. Il checkpoint
+        non viene modificato.
+
+    Restituisce:
+        Dizionario con configurazione, seed, return e lunghezze degli episodi.
+        I frame non sono inclusi nel valore restituito o nell'eventuale JSON.
+
+    Eccezioni:
+        FileNotFoundError: Se il checkpoint non esiste.
+        ValueError: Se modalità, temperatura o numero di episodi non sono validi.
     """
 
     if mode not in {"sample", "greedy"}:
-        raise ValueError("mode must be 'sample' or 'greedy'")
+        raise ValueError("mode deve essere 'sample' oppure 'greedy'")
     if n_episodes <= 0:
         raise ValueError("n_episodes deve essere positivo")
     if mode == "sample" and temperature <= 0:

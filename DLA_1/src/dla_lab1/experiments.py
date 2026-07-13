@@ -23,11 +23,11 @@ def batch_size_for(config: dict, batch_size_key: str) -> int:
     In questo modo possiamo cambiare batch size in un solo punto, adattandolo
     alla memoria disponibile sulla GPU.
 
-    Args:
+    Argomenti:
         config: Configurazione completa del progetto.
         batch_size_key: Nome della chiave nella sezione `hardware`.
 
-    Returns:
+    Restituisce:
         Batch size intero da usare nella run.
     """
     return int(config["hardware"][batch_size_key])
@@ -40,11 +40,11 @@ def run_feature_svm(config: dict, root: str | Path = ".") -> dict:
     E' la baseline stabile dell'esercizio precedente: estrae feature con
     ResNet-18 congelata e addestra una SVM lineare.
 
-    Args:
+    Argomenti:
         config: Configurazione caricata da `config.yaml`.
         root: Cartella radice del progetto, usata per risolvere path relativi.
 
-    Returns:
+    Restituisce:
         Dizionario con classificatore SVM, label test e predizioni.
     """
     seed_everything(int(config["project"]["seed"]))
@@ -52,7 +52,9 @@ def run_feature_svm(config: dict, root: str | Path = ".") -> dict:
     device = resolve_device(config["project"].get("device", "auto"))
     configure_torch_for_hardware(device, bool(config["hardware"].get("allow_tf32", True)))
 
-    batch_size = batch_size_for(config, exp["experiment"].get("batch_size_key", "batch_size_feature_extraction"))
+    batch_size = batch_size_for(
+        config, exp["experiment"].get("batch_size_key", "batch_size_feature_extraction")
+    )
     data_root = resolve_path(config["paths"]["data_root"], root)
     transform = build_transforms(image_size=int(config["dataset"]["image_size"]), train=False)
     train_set = load_gtsrb(data_root, split="train", transform=transform)
@@ -94,7 +96,11 @@ def run_feature_svm(config: dict, root: str | Path = ".") -> dict:
     )
     classifier.fit(train_features.numpy(), train_labels.numpy())
     predictions = classifier.predict(test_features.numpy())
-    return {"classifier": classifier, "test_labels": test_labels.numpy(), "predictions": predictions}
+    return {
+        "classifier": classifier,
+        "test_labels": test_labels.numpy(),
+        "predictions": predictions,
+    }
 
 
 def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -> dict:
@@ -104,12 +110,12 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
     Costruisce DataLoader, modello, loss, optimizer e training loop partendo
     da `config.yaml`, cosi' il notebook resta piu' pulito e riproducibile.
 
-    Args:
+    Argomenti:
         config: Configurazione generale del progetto.
         experiment_name: Nome dell'esperimento definito in `config.yaml`.
         root: Cartella radice del progetto.
 
-    Returns:
+    Restituisce:
         Dizionario con modello addestrato, history, DataLoader, device e artifact salvati.
     """
     seed_everything(int(config["project"]["seed"]))
@@ -117,7 +123,9 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
     device = resolve_device(config["project"].get("device", "auto"))
     configure_torch_for_hardware(device, bool(config["hardware"].get("allow_tf32", True)))
 
-    batch_size = batch_size_for(config, exp["experiment"].get("batch_size_key", "batch_size_finetune_frozen"))
+    batch_size = batch_size_for(
+        config, exp["experiment"].get("batch_size_key", "batch_size_finetune_frozen")
+    )
     augmentation = exp["experiment"].get("augmentation", "none")
     loaders = build_dataloaders(
         data_root=resolve_path(config["paths"]["data_root"], root),
@@ -150,4 +158,10 @@ def run_finetuning(config: dict, experiment_name: str, root: str | Path = ".") -
         checkpoint_path=checkpoint_dir / f"{experiment_name}.pt",
     )
     artifacts = save_run_artifacts(exp, experiment_name, history, root=root)
-    return {"model": model, "history": history, "loaders": loaders, "device": device, "artifacts": artifacts}
+    return {
+        "model": model,
+        "history": history,
+        "loaders": loaders,
+        "device": device,
+        "artifacts": artifacts,
+    }

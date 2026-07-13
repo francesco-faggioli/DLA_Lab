@@ -1,11 +1,11 @@
-# DLA 3 notebook order
+# Ordine dei notebook DLA 3
 
-Linux or WSL is recommended. Run or inspect the final notebooks in this order:
+Si consiglia Linux o WSL. Eseguire o consultare i notebook finali nel seguente ordine:
 
-1. `01_cartpole_reinforce_evaluation.ipynb` — REINFORCE and periodic multi-episode evaluation.
-2. `02_cartpole_value_baseline.ipynb` — raw/standardized returns and learned value baseline.
-3. `03_a2c_cartpole_lunarlander.ipynb` — A2C validation on CartPole and final LunarLander study.
+1. `01_cartpole_reinforce_evaluation.ipynb` — REINFORCE e valutazione periodica su più episodi.
+2. `02_cartpole_value_baseline.ipynb` — return grezzi/standardizzati e value baseline appresa.
+3. `03_a2c_cartpole_lunarlander.ipynb` — validazione A2C su CartPole e studio finale LunarLander.
 
-The final report is [`../README.md`](../README.md) and lightweight result evidence is under [`../results/`](../results/). Training, large sweeps, and rendering are opt-in through `RUN_*` flags. Checkpoint evaluation is performed only when a local checkpoint exists.
+La relazione finale è in [`../README.md`](../README.md) e le evidenze leggere dei risultati si trovano in [`../results/`](../results/). Training, sweep estesi e rendering sono attivabili esplicitamente tramite flag `RUN_*`. La valutazione dei checkpoint viene eseguita soltanto quando il checkpoint locale esiste.
 
-The exploratory notebook is preserved at `../exploratory/00_esperimenti_di_prova_a2c.ipynb`. It is not part of the final execution order and its early trials are not used as headline results.
+Il notebook esplorativo è conservato in `../exploratory/00_esperimenti_di_prova_a2c.ipynb`. Non appartiene all'ordine finale di esecuzione e le prime prove che contiene non sono usate come risultati principali.

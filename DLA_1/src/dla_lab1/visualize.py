@@ -12,11 +12,11 @@ def plot_class_distribution(labels, title: str = "Class distribution"):
 
     Nel primo notebook lo usiamo per rendere visibile lo sbilanciamento.
 
-    Args:
+    Argomenti:
         labels: Sequenza di label intere.
         title: Titolo del grafico.
 
-    Returns:
+    Restituisce:
         Coppia `(fig, ax)` di Matplotlib.
     """
     counts = np.bincount(np.asarray(labels, dtype=int))
@@ -35,10 +35,10 @@ def plot_training_history(history_frame):
 
     Sara' utile nella parte di fine-tuning.
 
-    Args:
+    Argomenti:
         history_frame: DataFrame con colonne epoch, train/val loss e train/val accuracy.
 
-    Returns:
+    Restituisce:
         Coppia `(fig, axes)` di Matplotlib.
     """
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -62,11 +62,11 @@ def plot_confusion_matrix(cm, title: str = "Confusion matrix"):
 
     La useremo quando confronteremo gli errori del modello sulle varie classi.
 
-    Args:
+    Argomenti:
         cm: Matrice di confusione.
         title: Titolo del grafico.
 
-    Returns:
+    Restituisce:
         Coppia `(fig, ax)` di Matplotlib.
     """
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -75,21 +75,23 @@ def plot_confusion_matrix(cm, title: str = "Confusion matrix"):
     return fig, ax
 
 
-def plot_retrieval_results(query_dataset, gallery_dataset, sim_matrix, query_index: int, k: int = 5):
+def plot_retrieval_results(
+    query_dataset, gallery_dataset, sim_matrix, query_index: int, k: int = 5
+):
     """
     Serve a visualizzare una query e le K immagini piu' simili della gallery.
 
-    La usiamo nell'Exercise 3.2 solo come controllo qualitativo: il colore verde
+    La usiamo nell'Esercizio 3.2 solo come controllo qualitativo: il colore verde
     indica un recupero della stessa classe, il rosso un recupero errato.
 
-    Args:
+    Argomenti:
         query_dataset: Dataset da cui prendere l'immagine query.
         gallery_dataset: Dataset usato come gallery retrieval.
         sim_matrix: Matrice di similarita' query-gallery.
         query_index: Indice della query da visualizzare.
         k: Numero di immagini recuperate da mostrare.
 
-    Returns:
+    Restituisce:
         Coppia `(fig, axes)` di Matplotlib.
     """
     query_img, query_label = query_dataset[query_index]

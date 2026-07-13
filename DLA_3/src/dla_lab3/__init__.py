@@ -1,7 +1,20 @@
-"""Reusable utilities for DLA Lab 3."""
+"""Utilità riutilizzabili per DLA Lab 3."""
 
-from .envs import make_env, observation_scale
+from .a2c import (
+    A2CConfig,
+    A2CNet,
+    A2CNetLunarSeparate,
+    a2c_from_env,
+    compute_gae,
+    evaluate_a2c_policy,
+    load_a2c_checkpoint,
+    lunar_a2c_from_env,
+    run_a2c_episode,
+    train_a2c_single_env,
+    train_a2c_vectorized,
+)
 from .config import load_lab_config, load_simple_yaml
+from .envs import make_env, observation_scale
 from .experiments import (
     choose_final_temperature,
     collect_current_lunar_candidates,
@@ -17,25 +30,11 @@ from .experiments import (
     select_lunar_policy_configuration,
     train_lunar_presets,
 )
-from .visualization import run_cartpole_visual_episodes, run_lunar_visual_episodes, show_frames
-from .a2c import (
-    A2CConfig,
-    A2CNet,
-    A2CNetLunarSeparate,
-    a2c_from_env,
-    compute_gae,
-    evaluate_a2c_policy,
-    load_a2c_checkpoint,
-    lunar_a2c_from_env,
-    run_a2c_episode,
-    train_a2c_single_env,
-    train_a2c_vectorized,
-)
 from .policy_gradient import (
-    PolicyNet,
-    ValueNet,
-    ReinforceConfig,
     Episode,
+    PolicyNet,
+    ReinforceConfig,
+    ValueNet,
     compute_returns,
     evaluate_policy,
     policy_from_env,
@@ -45,6 +44,7 @@ from .policy_gradient import (
     value_from_env,
 )
 from .seed import set_seed
+from .visualization import run_cartpole_visual_episodes, run_lunar_visual_episodes, show_frames
 
 __all__ = [
     "Episode",

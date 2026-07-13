@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "DLA_3" / "notebooks" / "03_a2c_cartpole_lunarlander.ipynb"
 
@@ -20,7 +19,9 @@ def main() -> None:
             if html_payload is None:
                 filtered_outputs.append(output)
                 continue
-            payload_size = len("".join(html_payload) if isinstance(html_payload, list) else html_payload)
+            payload_size = len(
+                "".join(html_payload) if isinstance(html_payload, list) else html_payload
+            )
             if payload_size < 1_000_000:
                 filtered_outputs.append(output)
                 continue

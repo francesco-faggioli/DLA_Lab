@@ -1,28 +1,28 @@
 {
   "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
   "mode": "sample",
-  "temperature": 0.75,
+  "temperature": 0.85,
   "seed_start": 100000,
   "n_episodes": 5,
   "episodes": [
     {
       "episode": 1,
       "seed": 100000,
-      "return": 232.19549831788655,
-      "length": 447,
+      "return": 234.6124202463935,
+      "length": 434,
       "success": true,
       "terminated": true,
       "truncated": false,
       "mode": "sample",
-      "temperature": 0.75,
+      "temperature": 0.85,
       "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
       "action_freq": [
-        0.13870246085011187,
-        0.17225950782997762,
-        0.5100671140939598,
-        0.1789709172259508
+        0.14746543778801843,
+        0.16359447004608296,
+        0.511520737327189,
+        0.1774193548387097
       ],
-      "frame_count": 448,
+      "frame_count": 435,
       "frame_shape": [
         400,
         600,
@@ -32,21 +32,21 @@
     {
       "episode": 2,
       "seed": 100001,
-      "return": 184.65162052250633,
-      "length": 494,
+      "return": 189.29381012373204,
+      "length": 497,
       "success": false,
       "terminated": true,
       "truncated": false,
       "mode": "sample",
-      "temperature": 0.75,
+      "temperature": 0.85,
       "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
       "action_freq": [
-        0.13360323886639677,
-        0.18218623481781376,
-        0.5080971659919028,
-        0.17611336032388664
+        0.16297786720321933,
+        0.17706237424547283,
+        0.49295774647887325,
+        0.16700201207243462
       ],
-      "frame_count": 495,
+      "frame_count": 498,
       "frame_shape": [
         400,
         600,
@@ -56,21 +56,21 @@
     {
       "episode": 3,
       "seed": 100002,
-      "return": 225.38248168637108,
-      "length": 593,
-      "success": true,
+      "return": 7.061775118363258,
+      "length": 429,
+      "success": false,
       "terminated": true,
       "truncated": false,
       "mode": "sample",
-      "temperature": 0.75,
+      "temperature": 0.85,
       "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
       "action_freq": [
-        0.2411467116357504,
-        0.17706576728499157,
-        0.4266441821247892,
-        0.1551433389544688
+        0.07692307692307693,
+        0.21678321678321677,
+        0.5221445221445221,
+        0.18414918414918416
       ],
-      "frame_count": 594,
+      "frame_count": 430,
       "frame_shape": [
         400,
         600,
@@ -80,21 +80,21 @@
     {
       "episode": 4,
       "seed": 100003,
-      "return": 198.04896725724927,
-      "length": 527,
-      "success": false,
+      "return": 201.5404489132943,
+      "length": 519,
+      "success": true,
       "terminated": true,
       "truncated": false,
       "mode": "sample",
-      "temperature": 0.75,
+      "temperature": 0.85,
       "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
       "action_freq": [
-        0.18216318785578747,
-        0.1650853889943074,
-        0.4876660341555977,
-        0.1650853889943074
+        0.1907514450867052,
+        0.16184971098265896,
+        0.47591522157996147,
+        0.17148362235067438
       ],
-      "frame_count": 528,
+      "frame_count": 520,
       "frame_shape": [
         400,
         600,
@@ -104,21 +104,21 @@
     {
       "episode": 5,
       "seed": 100004,
-      "return": 167.7206473926797,
-      "length": 498,
+      "return": 174.26002426572455,
+      "length": 455,
       "success": false,
       "terminated": true,
       "truncated": false,
       "mode": "sample",
-      "temperature": 0.75,
+      "temperature": 0.85,
       "checkpoint": "a2c_lunarlander_sb3_zoo_raw_current.pt",
       "action_freq": [
-        0.1686746987951807,
-        0.1646586345381526,
-        0.4979919678714859,
-        0.1686746987951807
+        0.14285714285714285,
+        0.17142857142857143,
+        0.5098901098901099,
+        0.17582417582417584
       ],
-      "frame_count": 499,
+      "frame_count": 456,
       "frame_shape": [
         400,
         600,
@@ -126,6 +126,6 @@
       ]
     }
   ],
-  "average_return": 201.59984303533858,
-  "average_length": 511.8
+  "average_return": 161.35369573350152,
+  "average_length": 466.8
 }

@@ -30,3 +30,6 @@ pygame
 # Controlli di qualita' locali
 ruff
 black
+
+# Package locali dei tre laboratori (installazione editable dalla root)
+-e .

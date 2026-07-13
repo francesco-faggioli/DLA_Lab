@@ -8,18 +8,18 @@ import torch
 
 
 def set_seed(seed: int) -> None:
-    """Set Python, NumPy and PyTorch seeds.
+    """Imposta i seed di Python, NumPy e PyTorch.
 
-    Args:
-        seed: Integer seed used by Python, NumPy and PyTorch.
+    Argomenti:
+        seed: Seed intero condiviso dai tre generatori.
 
-    What it does:
-        Reduces run-to-run variability in experiments. Reinforcement learning
-        remains stochastic because environments and sampled actions can still
-        produce high-variance trajectories.
+    Operazione:
+        Riduce la variabilità tra run. Il reinforcement learning resta stocastico
+        perché ambienti e azioni campionate possono produrre traiettorie diverse.
 
-    Outputs:
-        None. The function changes global random states.
+    Output:
+        Nessuno. Modifica lo stato globale dei generatori casuali e, se
+        disponibile, quello di tutti i device CUDA.
     """
 
     os.environ["PYTHONHASHSEED"] = str(seed)

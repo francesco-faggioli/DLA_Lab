@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_DIR = ROOT / "notebooks"
 
@@ -63,9 +62,8 @@ def write_notebook(name: str, cells: list[dict], kernel: str) -> None:
 
 def build_01() -> list[dict]:
     return [
-        md(
-            """
-# Exercise 1 - Sentiment Analysis: dataset, tokenizer e baseline stabile
+        md("""
+# Esercizio 1 - Analisi del sentiment: dataset, tokenizer e baseline stabile
 
 Kernel consigliato: `DLA2026-transformers`.
 
@@ -78,20 +76,16 @@ Il percorso e' diviso in tre passi:
 3. usare DistilBERT come feature extractor e addestrare una SVM lineare.
 
 Disclosure AI: la struttura del notebook e' stata riorganizzata con supporto di ChatGPT/Codex. Il codice e' stato separato in funzioni riusabili e deve essere rieseguito e verificato manualmente prima della consegna.
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## Setup
 
 Le funzioni sono nel modulo `src/dla_lab2`. Il notebook resta corto e documenta solo i passaggi principali.
 
 Nota sull'ambiente: questo notebook usa il kernel `DLA2026-transformers`. In questo ambiente puo' comparire un errore interno di `datasets/dill` durante `load_dataset`. La funzione `load_rotten_tomatoes()` gestisce quel caso caricando gli stessi split dalla cache Hugging Face locale gia' presente sul computer.
-"""
-        ),
+"""),
         code(SETUP),
-        code(
-            """
+        code("""
 from dataclasses import asdict
 import importlib
 
@@ -124,11 +118,9 @@ set_seed(42)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 pipeline_device = 0 if torch.cuda.is_available() else -1
 device
-"""
-        ),
-        md(
-            """
-## Exercise 1.1 - Loading the Dataset Splits
+"""),
+        md("""
+## Esercizio 1.1 - Caricamento degli split del dataset
 
 Richiesta dell'esercizio:
 
@@ -137,28 +129,22 @@ Richiesta dell'esercizio:
 - esplorare come sono organizzati esempi, colonne e label.
 
 Carichiamo il dataset con Hugging Face Datasets. Se l'ambiente non riesce a usare `load_dataset` per il problema `Pickler._batch_setitems`, la funzione usa il fallback sulla cache locale.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Carichiamo tutti gli split disponibili.
 ds_dict = load_rotten_tomatoes()
 
 # Questa tabella mostra quanti esempi ci sono in ogni split,
 # quali colonne sono disponibili e quali label sono presenti.
 pd.DataFrame(dataset_overview(ds_dict))
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Verifichiamo come si accede agli split e a un singolo esempio.
 print("Split disponibili:", list(ds_dict.keys()))
 print("Primo esempio train:")
 ds_dict["train"][0]
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Controlliamo il bilanciamento delle classi in ogni split.
 # La label 0 indica sentiment negativo, la label 1 indica sentiment positivo.
 label_counts = {
@@ -166,27 +152,21 @@ label_counts = {
     for split in ds_dict.keys()
 }
 pd.DataFrame(label_counts).T.rename(columns={0: "negative", 1: "positive"})
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Guardiamo alcuni esempi casuali per capire il tipo di frasi.
 pd.DataFrame(sample_examples(ds_dict["train"], n=8, seed=42))
-"""
-        ),
-        md(
-            """
-Osservazioni Exercise 1.1:
+"""),
+        md("""
+Osservazioni sull'Esercizio 1.1:
 
 - il dataset e' gia' diviso in `train`, `validation` e `test`;
 - ogni esempio contiene almeno `text` e `label`;
 - le label sono binarie: `0` negativo, `1` positivo;
 - gli split sono gia' pronti per training e valutazione, quindi non creiamo un nuovo split manuale.
-"""
-        ),
-        md(
-            """
-## Exercise 1.2 - A Pre-trained BERT and Tokenizer
+"""),
+        md("""
+## Esercizio 1.2 - BERT pre-addestrato e tokenizer
 
 Richiesta dell'esercizio:
 
@@ -196,10 +176,8 @@ Richiesta dell'esercizio:
 - capire quali output vengono prodotti.
 
 Usiamo `AutoTokenizer` e `AutoModel` dentro la funzione `load_distilbert_base()`. Il modello caricato non ha testa di classificazione: restituisce rappresentazioni contestuali dei token.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Carichiamo tokenizer e modello base.
 tokenizer, bert_model = load_distilbert_base(device=device)
 
@@ -209,19 +187,15 @@ batch = inspect_tokenizer_output(tokenizer, texts)
 
 # Il tokenizer restituisce tensori come input_ids e attention_mask.
 batch.keys()
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Decodifichiamo la prima sequenza per vedere token speciali e padding.
 print(tokenizer.decode(batch["input_ids"][0]))
 
 # Controlliamo la forma dei tensori in input al modello.
 print({key: value.shape for key, value in batch.items()})
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Passiamo il batch nel modello senza calcolare gradienti:
 # qui stiamo solo ispezionando gli output, non addestrando.
 with torch.no_grad():
@@ -229,30 +203,24 @@ with torch.no_grad():
 
 print(outputs.keys())
 print("last_hidden_state shape:", outputs.last_hidden_state.shape)
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Il primo token e' [CLS]. Il suo vettore nell'ultimo layer
 # viene spesso usato come rappresentazione sintetica della frase.
 cls_vectors = outputs.last_hidden_state[:, 0, :]
 cls_vectors.shape
-"""
-        ),
-        md(
-            """
-Osservazioni Exercise 1.2:
+"""),
+        md("""
+Osservazioni sull'Esercizio 1.2:
 
 - `input_ids` contiene gli identificativi numerici dei token;
 - `attention_mask` distingue token reali e padding;
 - `last_hidden_state` ha forma `(batch, sequence_length, hidden_size)`;
 - per DistilBERT base `hidden_size` e' 768;
 - per la baseline useremo `last_hidden_state[:, 0, :]`, cioe' il vettore del token `[CLS]` dell'ultimo layer.
-"""
-        ),
-        md(
-            """
-## Exercise 1.3 - Stable Baseline
+"""),
+        md("""
+## Esercizio 1.3 - Baseline stabile
 
 Richiesta dell'esercizio:
 
@@ -261,10 +229,8 @@ Richiesta dell'esercizio:
 3. valutare validation e test.
 
 Qui usiamo la pipeline Hugging Face `feature-extraction`. La funzione `extract_cls_features_with_pipeline()` interpreta l'output della pipeline e conserva solo il token `[CLS]` dell'ultimo layer. Poi addestriamo una SVM lineare di Scikit-learn.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 features = {}
 for split in ["train", "validation", "test"]:
     # Convertiamo la colonna testuale in lista per passarla alla pipeline.
@@ -281,10 +247,8 @@ for split in ["train", "validation", "test"]:
 
     # Controllo atteso: train -> (8530, 768), validation/test -> (1066, 768).
     print(split, features[split].shape)
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Addestriamo la SVM solo sul train split.
 svm = train_linear_svm(features["train"], ds_dict["train"]["label"])
 
@@ -295,10 +259,8 @@ baseline_metrics = [
 ]
 baseline_table = pd.DataFrame(baseline_metrics)
 baseline_table
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 Interpretazione della tabella:
 
 - `accuracy`: percentuale di frasi classificate correttamente;
@@ -307,27 +269,23 @@ Interpretazione della tabella:
 - `recall`: quanti positivi reali riesce a recuperare.
 
 Questi numeri sono la baseline stabile da confrontare con il fine-tuning del notebook successivo.
-"""
-        ),
-        md(
-            """
-## Conclusioni Exercise 1
+"""),
+        md("""
+## Conclusioni dell'Esercizio 1
 
-- Exercise 1.1 e' soddisfatto perche' abbiamo caricato gli split, controllato colonne, dimensioni, label ed esempi.
-- Exercise 1.2 e' soddisfatto perche' abbiamo caricato DistilBERT e tokenizer, tokenizzato frasi reali e ispezionato gli output del modello.
-- Exercise 1.3 e' soddisfatto perche' abbiamo estratto feature `[CLS]`, addestrato una SVM e valutato validation e test.
+- L'Esercizio 1.1 e' soddisfatto perche' abbiamo caricato gli split, controllato colonne, dimensioni, label ed esempi.
+- L'Esercizio 1.2 e' soddisfatto perche' abbiamo caricato DistilBERT e tokenizer, tokenizzato frasi reali e ispezionato gli output del modello.
+- L'Esercizio 1.3 e' soddisfatto perche' abbiamo estratto feature `[CLS]`, addestrato una SVM e valutato validation e test.
 
 Commento finale: questa baseline non modifica DistilBERT. Per questo e' piu' stabile e meno costosa del fine-tuning completo, ma puo' essere meno accurata perche' il transformer non si adatta al dataset Rotten Tomatoes.
-"""
-        ),
+"""),
     ]
 
 
 def build_02() -> list[dict]:
     return [
-        md(
-            """
-# Exercise 2 - Fine-tuning completo di DistilBERT
+        md("""
+# Esercizio 2 - Fine-tuning completo di DistilBERT
 
 Kernel usato: `DLA2026-transformers`.
 
@@ -339,11 +297,9 @@ In questo notebook verifichiamo:
 2. modello `AutoModelForSequenceClassification` con classification head;
 3. setup completo di `Trainer`, `TrainingArguments`, `DataCollatorWithPadding` e metriche Scikit-learn;
 4. training per 3 epoche e valutazione finale su validation e test.
-"""
-        ),
+"""),
         code(SETUP),
-        code(
-            """
+        code("""
 from dataclasses import asdict
 import importlib
 import math
@@ -371,19 +327,15 @@ from dla_lab2.sentiment import (
 set_seed(42)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 device
-"""
-        ),
-        md(
-            """
-## Exercise 2.1 - Token Preprocessing
+"""),
+        md("""
+## Esercizio 2.1 - Pre-elaborazione dei token
 
 Richiesta dell'esercizio: tokenizzare gli split una sola volta con Hugging Face `Dataset.map`, evitando di ritokenizzare a ogni batch.
 
 Il padding non viene fatto nella tokenizzazione: lo fara' `DataCollatorWithPadding` durante la costruzione dei batch. Questo e' piu' efficiente perche' ogni batch viene paddato solo alla lunghezza massima presente nel batch stesso.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Carichiamo dataset e tokenizer.
 ds_dict = load_rotten_tomatoes()
 tokenizer, _ = load_distilbert_base(device=None)
@@ -393,10 +345,8 @@ tokenized = tokenize_dataset_splits(ds_dict, tokenizer, max_length=256)
 
 # Verifica richiesta: ogni elemento contiene text, label, input_ids e attention_mask.
 tokenized["train"][0].keys()
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Ispezioniamo un esempio tokenizzato.
 # La run mostra che text e label sono rimasti disponibili,
 # mentre input_ids e attention_mask sono tensori PyTorch.
@@ -405,39 +355,31 @@ print(example["text"])
 print(example["label"])
 print(example["input_ids"].shape)
 print(example["attention_mask"].shape)
-"""
-        ),
-        md(
-            """
-Osservazioni Exercise 2.1:
+"""),
+        md("""
+Osservazioni sull'Esercizio 2.1:
 
 - `Dataset.map` e' stato eseguito su tutti e tre gli split.
 - Ogni esempio mantiene `text` e `label`.
 - Ogni esempio aggiunge `input_ids` e `attention_mask`.
 - Nella run, il primo esempio ha 47 token prima del padding dinamico di batch.
 - La colonna `token_type_ids` compare per compatibilita' del tokenizer, ma per DistilBERT non e' centrale in questo esercizio.
-"""
-        ),
-        md(
-            """
-## Exercise 2.2 - Model for Sequence Classification
+"""),
+        md("""
+## Esercizio 2.2 - Modello per la classificazione di sequenze
 
 Richiesta dell'esercizio: preparare DistilBERT per un task di sequence classification.
 
 Usiamo `AutoModelForSequenceClassification`, che carica il backbone DistilBERT pre-addestrato e aggiunge una testa di classificazione binaria. I pesi della testa (`pre_classifier` e `classifier`) sono nuovi e quindi devono essere addestrati sul dataset Rotten Tomatoes.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Istanza del modello con testa di classificazione binaria.
 # I pesi MISSING nel report sono attesi: corrispondono alla nuova testa di classificazione.
 classifier_model = load_sequence_classifier(num_labels=2)
 classifier_model
-"""
-        ),
-        md(
-            """
-## Exercise 2.3 - Fine-tuning con Trainer
+"""),
+        md("""
+## Esercizio 2.3 - Fine-tuning con Trainer
 
 Richieste dell'esercizio:
 
@@ -454,10 +396,8 @@ Queste parti sono implementate negli helper:
 - `build_training_arguments()` imposta learning rate, batch size, epoche, checkpoint per epoca, scheduler cosine e best checkpoint su accuracy.
 
 Nota tecnica: rimuoviamo il `NotebookProgressCallback` per evitare l'errore `on_train_begin must be called before on_evaluate`. Per rendere comunque chiara la run, aggiungiamo sotto una tabella esplicita con le metriche per epoca.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 def model_init():
     # Ogni run parte da una nuova istanza pulita del modello pre-addestrato.
     return load_sequence_classifier(num_labels=2)
@@ -488,19 +428,15 @@ trainer = build_trainer(
 
 print(f"Total training steps: {total_steps}")
 print(f"Warmup steps: {warmup_steps}")
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Avvio del fine-tuning completo di DistilBERT.
 # Il callback grafico del notebook e' disattivato, quindi il riepilogo leggibile
 # delle epoche viene costruito nella cella successiva da trainer.state.log_history.
 train_output = trainer.train()
 train_output
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Riepilogo leggibile del training.
 # `loss_log` mostra la training loss registrata ogni 50 step.
 # `epoch_eval_log` mostra le metriche validation alla fine di ogni epoca.
@@ -513,10 +449,8 @@ epoch_eval_log = history[history["eval_loss"].notna()][
 
 display(loss_log)
 display(epoch_eval_log)
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Valutiamo esplicitamente il best model su validation e test.
 # La funzione sotto rimuove il callback notebook anche se il Trainer era stato creato
 # in una sessione precedente.
@@ -525,25 +459,23 @@ validation_metrics = trainer.evaluate(tokenized["validation"])
 test_metrics = trainer.evaluate(tokenized["test"])
 
 pd.DataFrame([validation_metrics, test_metrics], index=["validation", "test"])
-"""
-        ),
-        md(
-            """
-## Conclusioni Exercise 2
+"""),
+        md("""
+## Conclusioni dell'Esercizio 2
 
 Tutti i punti richiesti sono stati svolti.
 
-Exercise 2.1:
+Esercizio 2.1:
 - gli split sono stati tokenizzati con `Dataset.map`;
 - ogni elemento contiene `text`, `label`, `input_ids` e `attention_mask`;
 - il padding e' lasciato al data collator, quindi avviene dinamicamente per batch.
 
-Exercise 2.2:
+Esercizio 2.2:
 - DistilBERT e' stato istanziato come `AutoModelForSequenceClassification`;
 - la testa di classificazione binaria e' nuova e viene addestrata sul task;
 - i messaggi `MISSING` per `pre_classifier` e `classifier` sono attesi.
 
-Exercise 2.3:
+Esercizio 2.3:
 - `DataCollatorWithPadding` e' usato dentro `build_trainer()`;
 - le metriche sono calcolate con Scikit-learn da logits e labels;
 - `TrainingArguments` usa 3 epoche, batch size 32, learning rate `2e-5`, weight decay `0.01`, scheduler cosine e warmup di 81 step;
@@ -565,25 +497,21 @@ Confronto con la baseline del notebook 1:
 - miglioramento assoluto: circa `+0.0497` punti di accuracy.
 
 Interpretazione: il fine-tuning completo migliora chiaramente la baseline congelata. La validation loss e' minima all'epoca 2 ma l'accuracy migliore arriva all'epoca 3; siccome il criterio scelto e' accuracy, il checkpoint finale e' coerente con la configurazione. Il risultato e' adatto come riferimento principale per gli esercizi successivi su fine-tuning efficiente.
-"""
-        ),
+"""),
     ]
 
 
 def build_03() -> list[dict]:
     return [
-        md(
-            """
-# Exercise 3.1 - Efficient Fine-tuning for Sentiment Analysis
+        md("""
+# Esercizio 3.1 - Fine-tuning efficiente per l'analisi del sentiment
 
 Kernel consigliato: `DLA2026-transformers`.
 
 Obiettivo: ridurre i parametri addestrabili rispetto al fine-tuning completo. Confrontiamo due strategie: LoRA e partial freezing.
-"""
-        ),
+"""),
         code(SETUP),
-        code(
-            """
+        code("""
 import pandas as pd
 import importlib
 import math
@@ -612,10 +540,8 @@ set_seed(42)
 suppress_subprocess_reader_unicode_errors()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 device
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 ds_dict = load_rotten_tomatoes()
 tokenizer, _ = load_distilbert_base(device=None)
 tokenized = tokenize_dataset_splits(ds_dict, tokenizer, max_length=256)
@@ -624,19 +550,15 @@ num_epochs = 3
 batch_size = 32
 total_steps = math.ceil(len(tokenized["train"]) / batch_size) * num_epochs
 warmup_steps = math.ceil(total_steps * 0.1)
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## Strategia A - LoRA
 
 LoRA aggiunge matrici a basso rango nei layer di attenzione. Qui modifichiamo solo `q_lin` e `v_lin`, lasciando il resto del modello congelato o quasi.
 
 Usiamo `warmup_steps` esplicito e sopprimiamo un traceback Unicode non fatale che puo' comparire in questo ambiente durante controlli subprocess di librerie PEFT.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 def lora_model_init():
     return lora_sequence_classifier_init(rank=8, alpha=16, dropout=0.1)
 
@@ -658,26 +580,20 @@ lora_trainer = build_trainer(
     eval_dataset=tokenized["validation"],
     model_init=lora_model_init,
 )
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 lora_train_output = lora_trainer.train()
 disable_notebook_progress_callback(lora_trainer)
 lora_test = lora_trainer.evaluate(tokenized["test"])
 lora_params = count_parameters(lora_trainer.model)
 lora_test, lora_params
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## Strategia B - Partial Freezing
 
 Congeliamo embeddings e i primi 4 layer transformer. Addestriamo solo gli ultimi layer e la testa. E' meno specializzato di LoRA, ma semplice da spiegare.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 def freeze_model_init():
     return partial_freezing_sequence_classifier_init(frozen_layers=4)
 
@@ -699,23 +615,19 @@ freeze_trainer = build_trainer(
     eval_dataset=tokenized["validation"],
     model_init=freeze_model_init,
 )
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 freeze_train_output = freeze_trainer.train()
 disable_notebook_progress_callback(freeze_trainer)
 freeze_test = freeze_trainer.evaluate(tokenized["test"])
 freeze_params = count_parameters(freeze_trainer.model)
 freeze_test, freeze_params
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 comparison = pd.DataFrame(
     [
         {
-            "method": "Full fine-tuning (Exercise 2)",
+            "method": "Fine-tuning completo (Esercizio 2)",
             "test_accuracy": 0.844278,
             "test_f1": 0.842803,
             "trainable_percent": 100.0,
@@ -735,36 +647,30 @@ comparison = pd.DataFrame(
     ]
 )
 comparison
-"""
-        ),
-        md(
-            """
-## Conclusioni Exercise 3.1
+"""),
+        md("""
+## Conclusioni dell'Esercizio 3.1
 
 - Il confronto corretto non e' solo accuracy: bisogna guardare anche la percentuale di parametri addestrabili.
 - LoRA di solito e' la scelta piu' pulita per PEFT perche' mantiene quasi tutto il modello originale congelato.
 - Partial freezing e' utile come baseline efficiente, ma puo' perdere capacita' se si congelano troppi layer.
-"""
-        ),
+"""),
     ]
 
 
 def build_04() -> list[dict]:
     return [
-        md(
-            """
-# Exercise 3.2 - Parameter-efficient adaptation of CLIP
+        md("""
+# Esercizio 3.2 - Adattamento efficiente di CLIP
 
 Kernel consigliato: `clip_lora`.
 
 Obiettivo: valutare CLIP zero-shot su ImageNet-Sketch e poi adattarlo con un metodo parameter-efficient. Usiamo CLIP-Adapter sulle feature immagine perche' e' leggero, chiaro e adatto a GPU con poca VRAM.
 
 Nota: questo notebook usa un adapter, non una LoRA interna al transformer. E' comunque parameter-efficient: il backbone CLIP resta congelato e si addestra solo un piccolo MLP.
-"""
-        ),
+"""),
         code(SETUP),
-        code(
-            """
+        code("""
 from torch.utils.data import DataLoader
 import pandas as pd
 import torch
@@ -786,17 +692,13 @@ from dla_lab2.clip_utils import (
 from dla_lab2.seed import set_seed
 
 set_seed(42)
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## 1. Modello e labels
 
 Carichiamo CLIP ViT-B/16 e i nomi semplici delle 1000 classi ImageNet. Usiamo la variante quickgelu per coerenza con i pesi OpenAI.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 model, preprocess, tokenizer, device = load_open_clip_model(
     model_name="ViT-B-16-quickgelu",
     pretrained="openai",
@@ -805,23 +707,17 @@ model, preprocess, tokenizer, device = load_open_clip_model(
 imagenet_class_names = load_imagenet_labels(PROJECT_ROOT / "imagenet_labels.json")
 print(device)
 print(len(imagenet_class_names), imagenet_class_names[:5])
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## 2. Dataset ImageNet-Sketch
 
 ImageNet-Sketch e' piu' interessante di ImageNette perche' introduce domain shift: CLIP vede disegni e schizzi invece di foto naturali.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 sketch_train, sketch_val = load_imagenet_sketch(seed=42, train_fraction=0.8)
 print(len(sketch_train), len(sketch_val))
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 TRAIN_SAMPLES = 5000
 BATCH_SIZE = 64
 
@@ -837,10 +733,8 @@ print(f"Full train split examples: {len(sketch_train)}")
 print(f"Train subset examples used: {len(train_tensor_ds)}")
 print(f"External validation examples used: {len(val_tensor_ds)}")
 print(f"Image batch size: {BATCH_SIZE}")
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## 3. Zero-shot baseline e prompt study
 
 Prima valutiamo CLIP senza training e confrontiamo alcuni prompt semplici. CLIP e' sensibile al testo usato come descrizione della classe: cambiare prompt puo' cambiare leggermente l'accuracy.
@@ -848,10 +742,8 @@ Prima valutiamo CLIP senza training e confrontiamo alcuni prompt semplici. CLIP 
 Il dataset e' stato diviso inizialmente in modo standard `80/20`: `40.711` esempi nello split train e `10.178` nello split validation. Per il training dell'adapter usiamo solo `5.000` esempi del train split, scelta dichiarata e riproducibile. La validation esterna rimane completa per avere una stima piu' affidabile del risultato finale.
 
 Best practice computazionale: il visual encoder di CLIP resta congelato, quindi calcoliamo le feature immagine del validation set una sola volta e poi riusiamo quelle feature per tutti i prompt.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 prompt_templates = [
     "a sketch of a {}",
     "a black and white sketch of a {}",
@@ -873,18 +765,14 @@ for template in prompt_templates:
 
 prompt_table = pd.DataFrame(prompt_results).sort_values("accuracy", ascending=False)
 prompt_table
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 Osservazioni attese dalla run:
 
 - confrontare piu' prompt serve a scegliere una formulazione testuale ragionevole prima di addestrare l'adapter;
 - con `prompt ensemble` intendiamo la media delle feature testuali prodotte da piu' prompt per la stessa classe.
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## 4. CLIP-Adapter
 
 Congeliamo CLIP e addestriamo solo un adapter MLP sulle feature immagine gia' precalcolate. Questo riduce memoria e rischio di danneggiare le rappresentazioni zero-shot.
@@ -895,10 +783,8 @@ Parametri addestrabili dell'adapter:
 
 - bottleneck 64: `66.113` parametri;
 - bottleneck 128: `131.713` parametri.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 train_feature_ds = precompute_image_features(model, train_image_loader, device)
 adapter_train_ds, adapter_val_ds = split_tensor_dataset(train_feature_ds, train_fraction=0.9, seed=42)
 
@@ -908,10 +794,8 @@ adapter_val_loader = DataLoader(adapter_val_ds, batch_size=256, shuffle=False)
 print(f"Train feature examples: {len(train_feature_ds)}")
 print(f"Adapter train/validation split: {len(adapter_train_ds)} / {len(adapter_val_ds)}")
 print(f"External validation feature examples: {len(val_feature_ds)}")
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 base_prompt = prompt_table.iloc[0]["prompt"]
 text_features_base = build_text_features(model, tokenizer, imagenet_class_names, base_prompt, device)
 
@@ -938,17 +822,13 @@ history128 = train_clip_adapter(
     epochs=30,
     lr=2e-3,
 )
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 ## 5. Valutazione finale
 
 Valutiamo zero-shot, adapter singolo e adapter con prompt ensembling sul validation set esterno ImageNet-Sketch. Usiamo sempre le feature immagine precalcolate, quindi il confronto finale non riesegue inutilmente il visual encoder.
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 zeroshot_acc = evaluate_precomputed_features(val_feature_loader, text_features_base, logit_scale, device)
 acc64 = evaluate_adapter(adapter64, val_feature_loader, text_features_base, logit_scale, device)
 acc128 = evaluate_adapter(adapter128, val_feature_loader, text_features_base, logit_scale, device)
@@ -969,10 +849,8 @@ results = pd.DataFrame(
     ]
 )
 results
-"""
-        ),
-        code(
-            """
+"""),
+        code("""
 # Questa tabella serve solo a controllare l'andamento della loss nelle ultime epoche.
 # La scelta finale del modello si basa sulla tabella di accuracy esterna sopra.
 loss_tail = pd.concat(
@@ -983,21 +861,17 @@ loss_tail = pd.concat(
     ignore_index=True,
 )
 loss_tail
-"""
-        ),
-        md(
-            """
+"""),
+        md("""
 Osservazioni dalla valutazione finale:
 
 - baseline zero-shot: da confrontare con gli adapter tramite la colonna `gain`;
 - prompt ensemble senza training: puo' migliorare leggermente la baseline, ma non e' garantito che migliori anche gli adapter;
 - se l'ensemble dei prompt non migliora l'adapter, si mantiene il miglior prompt singolo;
 - train loss molto bassa e validation loss piu' alta indicano possibile overfitting, da discutere nelle conclusioni.
-"""
-        ),
-        md(
-            """
-## Conclusioni Exercise 3.2
+"""),
+        md("""
+## Conclusioni dell'Esercizio 3.2
 
 Tutti i punti richiesti sono stati svolti.
 
@@ -1019,13 +893,14 @@ Best practice adottate:
 - confronto con zero-shot, prompt singolo e prompt ensemble;
 - reporting del gain rispetto alla baseline;
 - scelta finale basata su accuracy esterna, non solo su train loss.
-"""
-        ),
+"""),
     ]
 
 
 def main() -> None:
-    write_notebook("01_sentiment_dataset_tokenizer_baseline.ipynb", build_01(), "DLA2026-transformers")
+    write_notebook(
+        "01_sentiment_dataset_tokenizer_baseline.ipynb", build_01(), "DLA2026-transformers"
+    )
     write_notebook("02_distilbert_full_finetuning.ipynb", build_02(), "DLA2026-transformers")
     write_notebook("03_efficient_finetuning_sentiment.ipynb", build_03(), "DLA2026-transformers")
     write_notebook("04_clip_adapter_imagenet_sketch.ipynb", build_04(), "clip_lora")

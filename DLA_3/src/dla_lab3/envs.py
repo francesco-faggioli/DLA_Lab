@@ -10,20 +10,21 @@ def make_env(
     render_mode: str | None = None,
     **kwargs,
 ) -> gym.Env:
-    """Create and seed a Gymnasium environment.
+    """Crea un ambiente Gymnasium e ne imposta il seed.
 
-    Args:
-        env_id: Gymnasium environment id, for example `CartPole-v1` or
+    Argomenti:
+        env_id: Identificativo Gymnasium, per esempio `CartPole-v1` o
             `LunarLander-v3`.
-        seed: Optional seed used for `reset` and for the action space.
-        render_mode: Optional render mode, for example `human`.
-        **kwargs: Extra keyword arguments passed to `gym.make`.
+        seed: Seed opzionale usato per `reset` e per lo spazio delle azioni.
+        render_mode: Modalità di rendering opzionale, per esempio `human`.
+        **kwargs: Argomenti aggiuntivi passati a `gym.make`.
 
-    What it does:
-        Instantiates the environment and applies the seed consistently.
+    Operazione:
+        Istanzia l'ambiente e applica il seed in modo coerente. Non chiude
+        automaticamente l'ambiente restituito.
 
-    Outputs:
-        A ready-to-use Gymnasium environment.
+    Output:
+        Ambiente Gymnasium pronto per l'uso.
     """
 
     env = gym.make(env_id, render_mode=render_mode, **kwargs)
@@ -34,19 +35,20 @@ def make_env(
 
 
 def observation_scale(env_id: str) -> torch.Tensor:
-    """Return a simple observation scale for supported environments.
+    """Restituisce la scala delle osservazioni per gli ambienti supportati.
 
-    Args:
-        env_id: Environment id or name containing `CartPole` or `LunarLander`.
+    Argomenti:
+        env_id: Identificativo contenente `CartPole` o `LunarLander`.
 
-    What it does:
-        Provides fixed scale values used to normalize observations before they
-        are passed to the neural networks. These values come from the official
-        Gymnasium observation-space ranges, with finite practical values for
-        unbounded CartPole velocities.
+    Operazione:
+        Fornisce valori fissi per normalizzare le osservazioni prima delle reti.
+        Per le velocità CartPole non limitate usa valori pratici finiti.
 
-    Outputs:
-        Float tensor with one scale value per observation dimension.
+    Output:
+        Tensore float con un valore per dimensione dell'osservazione.
+
+    Eccezioni:
+        ValueError: Se l'ambiente non è supportato.
     """
 
     if "CartPole" in env_id:
@@ -56,4 +58,4 @@ def observation_scale(env_id: str) -> torch.Tensor:
             [2.5, 2.5, 10.0, 10.0, 6.2831855, 10.0, 1.0, 1.0],
             dtype=torch.float32,
         )
-    raise ValueError(f"No observation scale configured for environment: {env_id}")
+    raise ValueError(f"Nessuna scala delle osservazioni configurata per l'ambiente: {env_id}")

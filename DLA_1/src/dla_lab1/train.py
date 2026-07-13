@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from contextlib import nullcontext
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +32,7 @@ class EpochMetrics:
         val_acc: Accuracy media sulla validation.
         learning_rate: Learning rate usato in quell'epoca.
 
-    Returns:
+    Restituisce:
         Oggetto dataclass con le metriche di una epoca.
     """
 
@@ -50,10 +50,10 @@ def resolve_device(device: str = "auto") -> torch.device:
 
     Con `auto` usa CUDA se disponibile, altrimenti MPS su Mac o CPU.
 
-    Args:
+    Argomenti:
         device: Nome del device richiesto oppure `auto`.
 
-    Returns:
+    Restituisce:
         Oggetto `torch.device` da passare a modelli e tensori.
     """
     if device == "auto":
@@ -72,11 +72,11 @@ def configure_torch_for_hardware(device: torch.device, allow_tf32: bool = True) 
     Su GPU NVIDIA abilita benchmark cuDNN e TF32, che di solito velocizzano
     il training senza cambiare la logica dell'esperimento.
 
-    Args:
+    Argomenti:
         device: Device selezionato per il training.
         allow_tf32: Se True, abilita TF32 sulle GPU NVIDIA compatibili.
 
-    Returns:
+    Restituisce:
         None. Modifica impostazioni globali PyTorch.
     """
     if device.type == "cuda":
@@ -85,21 +85,23 @@ def configure_torch_for_hardware(device: torch.device, allow_tf32: bool = True) 
         torch.backends.cudnn.allow_tf32 = allow_tf32
 
 
-def build_optimizer(name: str, params, learning_rate: float, weight_decay: float = 0.0, momentum: float = 0.9):
+def build_optimizer(
+    name: str, params, learning_rate: float, weight_decay: float = 0.0, momentum: float = 0.9
+):
     """
     Serve a creare l'optimizer scelto nella configurazione.
 
     In questo modo possiamo provare Adam, AdamW o SGD senza riscrivere
     il training loop nel notebook.
 
-    Args:
+    Argomenti:
         name: Nome dell'optimizer: `Adam`, `AdamW` o `SGD`.
         params: Parametri addestrabili del modello.
         learning_rate: Learning rate iniziale.
         weight_decay: Regolarizzazione L2.
         momentum: Momentum usato solo da SGD.
 
-    Returns:
+    Restituisce:
         Optimizer PyTorch configurato.
     """
     if name == "Adam":
@@ -111,14 +113,16 @@ def build_optimizer(name: str, params, learning_rate: float, weight_decay: float
     raise ValueError(f"Unsupported optimizer {name!r}.")
 
 
-def build_scheduler(name: str, optimizer, epochs: int, step_size: int = 4, gamma: float = 0.1, min_lr: float = 1e-6):
+def build_scheduler(
+    name: str, optimizer, epochs: int, step_size: int = 4, gamma: float = 0.1, min_lr: float = 1e-6
+):
     """
     Serve a modificare il learning rate durante il training.
 
     `step` riduce il learning rate a intervalli fissi, mentre `cosine`
     lo riduce in modo piu' progressivo.
 
-    Args:
+    Argomenti:
         name: Scheduler da usare: `none`, `step` o `cosine`.
         optimizer: Optimizer a cui applicare lo scheduler.
         epochs: Numero massimo di epoche.
@@ -126,7 +130,7 @@ def build_scheduler(name: str, optimizer, epochs: int, step_size: int = 4, gamma
         gamma: Fattore moltiplicativo dello scheduler `step`.
         min_lr: Learning rate minimo per `cosine`.
 
-    Returns:
+    Restituisce:
         Scheduler PyTorch oppure None.
     """
     if name == "none":
@@ -138,7 +142,9 @@ def build_scheduler(name: str, optimizer, epochs: int, step_size: int = 4, gamma
     raise ValueError(f"Unsupported scheduler {name!r}.")
 
 
-def trainable_parameter_groups(model: nn.Module, training: dict[str, Any]) -> list[dict[str, Any]] | list[nn.Parameter]:
+def trainable_parameter_groups(
+    model: nn.Module, training: dict[str, Any]
+) -> list[dict[str, Any]] | list[nn.Parameter]:
     """
     Serve a costruire parametri addestrabili con eventuali learning rate differenziati.
 
@@ -147,11 +153,11 @@ def trainable_parameter_groups(model: nn.Module, training: dict[str, Any]) -> li
     o `fc_lr`, questa funzione crea gruppi separati; altrimenti restituisce
     la lista piatta dei parametri addestrabili.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch.
         training: Sezione training della configurazione.
 
-    Returns:
+    Restituisce:
         Lista di parametri oppure lista di param group per l'optimizer.
     """
     default_lr = float(training.get("learning_rate", 5e-4))
@@ -196,7 +202,7 @@ def run_epoch(
     Se riceve un optimizer aggiorna i pesi del modello; se l'optimizer manca,
     calcola solo loss e accuracy senza modificare il modello.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch.
         dataloader: DataLoader da usare per train o valutazione.
         criterion: Funzione di loss.
@@ -205,7 +211,7 @@ def run_epoch(
         scaler: GradScaler opzionale per mixed precision su CUDA.
         max_grad_norm: Valore massimo per il gradient clipping.
 
-    Returns:
+    Restituisce:
         Tupla `(loss_media, accuracy_media)` dell'epoca.
     """
     is_train = optimizer is not None
@@ -264,7 +270,7 @@ def train_model(
     Monitora la validation accuracy, salva il modello migliore e applica
     early stopping se la validation non migliora per troppe epoche.
 
-    Args:
+    Argomenti:
         model: Modello da addestrare.
         train_loader: DataLoader del training split.
         val_loader: DataLoader della validation.
@@ -273,7 +279,7 @@ def train_model(
         class_weights: Pesi opzionali per le classi.
         checkpoint_path: File in cui salvare il miglior modello.
 
-    Returns:
+    Restituisce:
         Tupla `(model, history)`, dove `model` contiene il miglior checkpoint ricaricato.
     """
     training = config.get("training", config)
@@ -283,7 +289,9 @@ def train_model(
     if not trainable_params:
         raise ValueError("No trainable parameters found.")
 
-    criterion = build_loss(training.get("loss", "CrossEntropy"), class_weights=class_weights, device=device, **training)
+    criterion = build_loss(
+        training.get("loss", "CrossEntropy"), class_weights=class_weights, device=device, **training
+    )
     optimizer = build_optimizer(
         training.get("optimizer", "AdamW"),
         trainable_params,
@@ -300,7 +308,10 @@ def train_model(
         min_lr=float(training.get("min_lr", 1e-6)),
     )
 
-    use_amp = bool(training.get("use_amp", config.get("hardware", {}).get("use_amp", True))) and device.type == "cuda"
+    use_amp = (
+        bool(training.get("use_amp", config.get("hardware", {}).get("use_amp", True)))
+        and device.type == "cuda"
+    )
     scaler = torch.amp.GradScaler("cuda") if use_amp else None
     wandb_run = init_wandb_run(config)
 

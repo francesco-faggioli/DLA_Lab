@@ -4,34 +4,35 @@ from pathlib import Path
 
 
 def project_root() -> Path:
-    """Return the DLA_3 project root.
+    """Restituisce la root del progetto DLA 3.
 
-    Args:
-        None.
+    Argomenti:
+        Nessuno.
 
-    What it does:
-        Resolves the directory that contains `src`, `notebooks`, `scripts`,
-        `config`, `artifacts` and `checkpoints`.
+    Operazione:
+        Risolve la directory che contiene `src`, `notebooks`, `scripts`,
+        `config`, `artifacts` e `checkpoints`.
 
-    Outputs:
-        Path pointing to the project root.
+    Output:
+        Percorso della root del progetto.
     """
 
     return Path(__file__).resolve().parents[2]
 
 
 def artifact_dir(*parts: str, create: bool = True) -> Path:
-    """Return a path inside `artifacts`.
+    """Restituisce un percorso interno ad `artifacts`.
 
-    Args:
-        *parts: Optional subdirectories or filename components.
-        create: If True, create the parent directory or the directory itself.
+    Argomenti:
+        *parts: Sottodirectory o componenti del nome file opzionali.
+        create: Se True, crea la directory o la relativa directory genitore.
 
-    What it does:
-        Centralizes local generated outputs outside notebooks.
+    Operazione:
+        Centralizza gli output generati fuori dai notebook. Con `create=True`
+        può creare directory sul filesystem.
 
-    Outputs:
-        Path inside the project `artifacts` folder.
+    Output:
+        Percorso interno alla cartella `artifacts`.
     """
 
     path = project_root() / "artifacts" / Path(*parts)
@@ -42,17 +43,18 @@ def artifact_dir(*parts: str, create: bool = True) -> Path:
 
 
 def checkpoint_dir(*parts: str, create: bool = True) -> Path:
-    """Return a path inside `checkpoints`.
+    """Restituisce un percorso interno a `checkpoints`.
 
-    Args:
-        *parts: Optional subdirectories or filename components.
-        create: If True, create the parent directory or the directory itself.
+    Argomenti:
+        *parts: Sottodirectory o componenti del nome file opzionali.
+        create: Se True, crea la directory o la relativa directory genitore.
 
-    What it does:
-        Keeps model files out of notebook folders.
+    Operazione:
+        Mantiene i modelli fuori dalle cartelle dei notebook. Con `create=True`
+        può creare directory sul filesystem.
 
-    Outputs:
-        Path inside the project `checkpoints` folder.
+    Output:
+        Percorso interno alla cartella `checkpoints`.
     """
 
     path = project_root() / "checkpoints" / Path(*parts)

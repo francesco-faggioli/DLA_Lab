@@ -1,13 +1,13 @@
-# Lab 1 result evidence
+# Evidenze dei risultati del Lab 1
 
-These lightweight files make the reported metrics inspectable without publishing datasets, W&B logs or model checkpoints.
+Questi file leggeri rendono ispezionabili le metriche riportate senza pubblicare dataset, log W&B o checkpoint dei modelli.
 
-| File | Content | Primary source |
+| File | Contenuto | Fonte primaria |
 | --- | --- | --- |
-| `dataset_summary.json` | GTSRB cardinality, imbalance and image dimensions | Output of `01_eda_and_feature_baseline.ipynb` |
-| `test_metrics.csv` | Final classification and retrieval metrics | Executed notebook outputs |
-| `run_validation_summary.csv` | Validation comparison across the saved pipeline runs | Local `artifacts/runs/*/summary.json` files |
-| `baseline_history.csv` | Head-only fine-tuning history | Local pipeline artifact and notebook output |
-| `improved_history.csv` | Selected improved-run history | Local pipeline artifact and notebook output |
+| `dataset_summary.json` | Cardinalità, sbilanciamento e dimensioni delle immagini GTSRB | Output di `01_eda_and_feature_baseline.ipynb` |
+| `test_metrics.csv` | Metriche finali di classificazione e retrieval | Output dei notebook eseguiti |
+| `run_validation_summary.csv` | Confronto in validazione tra le run salvate della pipeline | File locali `artifacts/runs/*/summary.json` |
+| `baseline_history.csv` | Cronologia del fine-tuning head-only | Artefatto locale della pipeline e output del notebook |
+| `improved_history.csv` | Cronologia della run migliorata selezionata | Artefatto locale della pipeline e output del notebook |
 
-The test accuracy `0.8025` is preserved from the final test output of the improved notebook. The validation files describe the named pipeline runs and must not be interpreted as a new test evaluation.
+L'accuracy di test `0.8025` è preservata dall'output finale di test del notebook dei miglioramenti. I file di validazione descrivono le run denominate della pipeline e non devono essere interpretati come una nuova valutazione sul test.

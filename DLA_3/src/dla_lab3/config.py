@@ -12,7 +12,9 @@ def _parse_scalar(value: str) -> Any:
         return value.lower() == "true"
     if value.lower() in {"null", "none"}:
         return None
-    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
         return value[1:-1]
     if value.startswith("[") and value.endswith("]"):
         inner = value[1:-1].strip()
@@ -40,18 +42,17 @@ def _next_container(lines: list[str], start_index: int, current_indent: int) -> 
 
 
 def load_simple_yaml(path: str | Path) -> dict[str, Any]:
-    """Load the small YAML subset used by this lab configuration.
+    """Carica il sottoinsieme YAML usato dalla configurazione del laboratorio.
 
-    Args:
-        path: Path to the YAML file.
+    Argomenti:
+        path: Percorso del file YAML da leggere.
 
-    What it does:
-        Parses nested dictionaries, simple lists, inline lists and scalar values
-        with only the Python standard library. This avoids adding PyYAML as a
-        required runtime dependency for the notebooks.
+    Operazione:
+        Analizza dizionari annidati, liste semplici o inline e valori scalari
+        usando soltanto la libreria standard. Il file viene letto senza scritture.
 
-    Outputs:
-        Dictionary containing the parsed configuration.
+    Output:
+        Dizionario contenente la configurazione analizzata.
     """
 
     lines = Path(path).read_text(encoding="utf-8").splitlines()
@@ -93,17 +94,17 @@ def load_simple_yaml(path: str | Path) -> dict[str, Any]:
 
 
 def load_lab_config(path: str | Path) -> dict[str, Any]:
-    """Load a lab configuration file.
+    """Carica il file di configurazione del laboratorio.
 
-    Args:
-        path: Path to `lab3_defaults.yaml`.
+    Argomenti:
+        path: Percorso di `lab3_defaults.yaml`.
 
-    What it does:
-        Uses PyYAML when it is installed and falls back to the local minimal
-        parser otherwise.
+    Operazione:
+        Usa PyYAML quando disponibile; in caso contrario usa il parser minimale
+        locale. Propaga errori di lettura o sintassi non supportata.
 
-    Outputs:
-        Dictionary with the lab configuration.
+    Output:
+        Dizionario con la configurazione del laboratorio.
     """
 
     try:

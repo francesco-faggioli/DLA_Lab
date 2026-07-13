@@ -17,14 +17,14 @@ def build_classifier(
     Lo useremo nel notebook di fine-tuning: sostituisce il classificatore finale
     ImageNet con un classificatore per i segnali stradali.
 
-    Args:
+    Argomenti:
         model_name: Nome del modello torchvision, ad esempio `resnet18`.
         num_classes: Numero di classi finali da predire.
         weights: Pesi pre-addestrati da caricare, oppure None.
         freeze_backbone: Se True, congela tutti i layer del backbone.
         unfreeze_layer4: Se True, riattiva l'ultimo blocco ResNet per il fine-tuning selettivo.
 
-    Returns:
+    Restituisce:
         Modello PyTorch con layer finale sostituito e parametri addestrabili configurati.
     """
     model = get_model(model_name, weights=weights)
@@ -42,18 +42,20 @@ def build_classifier(
     return model
 
 
-def build_feature_extractor(model_name: str = "resnet18", weights: str | None = "DEFAULT") -> nn.Module:
+def build_feature_extractor(
+    model_name: str = "resnet18", weights: str | None = "DEFAULT"
+) -> nn.Module:
     """
     Serve a usare ResNet-18 come estrattore di feature.
 
     Rimuove il classificatore finale e restituisce vettori da 512 dimensioni
     per ogni immagine; questi vettori vengono poi usati dalla SVM.
 
-    Args:
+    Argomenti:
         model_name: Nome del modello torchvision da usare come backbone.
         weights: Pesi pre-addestrati da caricare, oppure None.
 
-    Returns:
+    Restituisce:
         Modello PyTorch che produce feature invece di logits di classificazione.
     """
     model = get_model(model_name, weights=weights)
@@ -67,10 +69,10 @@ def count_parameters(model: nn.Module) -> dict[str, int]:
 
     E' utile per spiegare quanto del modello stiamo davvero allenando.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch da analizzare.
 
-    Returns:
+    Restituisce:
         Dizionario con `total` e `trainable`.
     """
     total = sum(p.numel() for p in model.parameters())

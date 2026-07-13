@@ -15,12 +15,12 @@ def predict(model, dataloader, device: torch.device) -> tuple[torch.Tensor, torc
     Restituisce label vere e predizioni su CPU, cosi' possiamo calcolare
     accuracy, classification report e confusion matrix con scikit-learn.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch da valutare.
         dataloader: DataLoader con immagini e label.
         device: Device su cui eseguire il modello.
 
-    Returns:
+    Restituisce:
         Tupla `(y_true, y_pred)` con label vere e predette su CPU.
     """
     model = model.to(device)
@@ -43,12 +43,12 @@ def classification_metrics(y_true, y_pred, target_names=None) -> dict:
     La accuracy e' il numero piu' immediato, mentre il classification report
     mostra precision, recall e F1 anche per le singole classi.
 
-    Args:
+    Argomenti:
         y_true: Label vere.
         y_pred: Label predette dal modello.
         target_names: Nomi opzionali delle classi da mostrare nel report.
 
-    Returns:
+    Restituisce:
         Dizionario con accuracy, classification report e matrice di confusione.
     """
     return {
@@ -69,10 +69,10 @@ def history_to_frame(history) -> pd.DataFrame:
 
     La usiamo nel notebook per visualizzare e commentare loss e accuracy.
 
-    Args:
+    Argomenti:
         history: Lista di oggetti `EpochMetrics`.
 
-    Returns:
+    Restituisce:
         DataFrame con una riga per epoca.
     """
     return pd.DataFrame([asdict(row) for row in history])
@@ -85,11 +85,11 @@ def save_text_report(path: str | Path, report: str) -> Path:
     E' utile quando vogliamo archiviare i risultati di una run senza
     dipendere solo dall'output del notebook.
 
-    Args:
+    Argomenti:
         path: File in cui salvare il report.
         report: Testo da scrivere.
 
-    Returns:
+    Restituisce:
         Path del file salvato.
     """
     path = Path(path)

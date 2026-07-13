@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-import inspect
 import hashlib
+import inspect
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from sklearn.metrics import accuracy_score, classification_report, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
@@ -32,18 +38,18 @@ def _patch_datasets_fingerprinting_for_python314() -> None:
     """
     Applica una patch locale al fingerprinting di Hugging Face Datasets.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         None. Modifica `datasets.fingerprint.Hasher.hash` in memoria.
 
-    Notes:
-        Nell'ambiente `DLA2026-transformers` viene usato Python 3.14. Alcune
-        versioni di `datasets`/`dill` non sono compatibili con la firma interna
-        di `pickle._Pickler._batch_setitems` di Python 3.14. L'errore compare
-        quando `datasets` prova a calcolare fingerprint e cache hash, non quando
-        legge davvero i dati.
+    Note:
+        Alcune combinazioni recenti di Python, `datasets` e `dill` non sono
+        compatibili con la firma interna di `pickle._Pickler._batch_setitems`.
+        L'errore compare quando `datasets` calcola fingerprint e hash della cache,
+        non durante la lettura effettiva dei dati. Nell'ambiente canonico Python
+        3.12 viene mantenuto il percorso standard finché non compare l'errore.
 
         La patch mantiene il comportamento originale quando funziona. Solo se
         compare l'errore `Pickler._batch_setitems`, usa un hash stabile basato
@@ -75,13 +81,13 @@ def _load_rotten_tomatoes_from_local_cache() -> Any:
     """
     Carica Rotten Tomatoes dalla cache Hugging Face locale.
 
-    Args:
+    Argomenti:
         Nessun argomento. La funzione cerca nella cache standard dell'utente.
 
-    Returns:
+    Restituisce:
         DatasetDict con split train, validation e test.
 
-    Raises:
+    Eccezioni:
         FileNotFoundError: Se i file Arrow del dataset non sono presenti in cache.
     """
     _patch_datasets_fingerprinting_for_python314()
@@ -114,13 +120,13 @@ def load_rotten_tomatoes(dataset_id: str = DATASET_ID) -> Any:
     """
     Scarica e carica il dataset Rotten Tomatoes da Hugging Face.
 
-    Args:
+    Argomenti:
         dataset_id: Identificativo Hugging Face del dataset.
 
-    Returns:
+    Restituisce:
         DatasetDict con gli split disponibili, di solito train, validation e test.
 
-    Notes:
+    Note:
         In alcuni ambienti Windows/Python recenti `datasets` puo' fallire durante
         il controllo della cache con un errore `Pickler._batch_setitems`. Prima
         del caricamento applichiamo una patch locale al fingerprinting; se il
@@ -143,10 +149,10 @@ def dataset_overview(ds_dict: Any) -> list[dict[str, Any]]:
     """
     Riassume dimensioni, colonne ed etichette degli split.
 
-    Args:
+    Argomenti:
         ds_dict: DatasetDict Hugging Face.
 
-    Returns:
+    Restituisce:
         Lista di dizionari, uno per split.
     """
     rows: list[dict[str, Any]] = []
@@ -166,28 +172,33 @@ def sample_examples(dataset: Any, n: int = 8, seed: int = 42) -> list[dict[str, 
     """
     Estrae esempi casuali da uno split.
 
-    Args:
+    Argomenti:
         dataset: Split Hugging Face con colonne `text` e `label`.
         n: Numero di esempi da estrarre.
         seed: Seed per la selezione casuale.
 
-    Returns:
+    Restituisce:
         Lista di esempi con indice, testo ed etichetta.
     """
     rng = np.random.default_rng(seed)
     indices = rng.choice(len(dataset), size=min(n, len(dataset)), replace=False)
-    return [{"idx": int(i), "label": int(dataset[int(i)]["label"]), "text": dataset[int(i)]["text"]} for i in indices]
+    return [
+        {"idx": int(i), "label": int(dataset[int(i)]["label"]), "text": dataset[int(i)]["text"]}
+        for i in indices
+    ]
 
 
-def load_distilbert_base(model_id: str = DISTILBERT_ID, device: str | None = None) -> tuple[Any, Any]:
+def load_distilbert_base(
+    model_id: str = DISTILBERT_ID, device: str | None = None
+) -> tuple[Any, Any]:
     """
     Carica tokenizer e modello DistilBERT senza testa di classificazione.
 
-    Args:
+    Argomenti:
         model_id: Nome del modello Hugging Face.
         device: Device opzionale, per esempio `cuda` o `cpu`.
 
-    Returns:
+    Restituisce:
         Coppia `(tokenizer, model)`.
     """
     from transformers import AutoModel, AutoTokenizer
@@ -204,15 +215,17 @@ def inspect_tokenizer_output(tokenizer: Any, texts: list[str], max_length: int =
     """
     Tokenizza alcuni testi per ispezionare input ids e attention mask.
 
-    Args:
+    Argomenti:
         tokenizer: Tokenizer Hugging Face.
         texts: Lista di frasi.
         max_length: Lunghezza massima usata per il truncation.
 
-    Returns:
+    Restituisce:
         BatchEncoding con `input_ids` e `attention_mask`.
     """
-    return tokenizer(texts, padding=True, truncation=True, max_length=max_length, return_tensors="pt")
+    return tokenizer(
+        texts, padding=True, truncation=True, max_length=max_length, return_tensors="pt"
+    )
 
 
 def extract_cls_features_with_pipeline(
@@ -226,7 +239,7 @@ def extract_cls_features_with_pipeline(
     """
     Estrae le feature del token CLS dall'ultimo layer di DistilBERT.
 
-    Args:
+    Argomenti:
         texts: Lista di stringhe da rappresentare.
         model: Modello DistilBERT senza testa di classificazione.
         tokenizer: Tokenizer associato al modello.
@@ -234,7 +247,7 @@ def extract_cls_features_with_pipeline(
         device: Indice GPU per Hugging Face pipeline, oppure -1 per CPU.
         truncation: Se True tronca sequenze troppo lunghe.
 
-    Returns:
+    Restituisce:
         Array NumPy di forma `(n_testi, hidden_size)`.
     """
     from transformers import pipeline
@@ -258,12 +271,12 @@ def train_linear_svm(features: np.ndarray, labels: list[int] | np.ndarray, c: fl
     """
     Addestra una baseline SVM lineare sulle feature estratte.
 
-    Args:
+    Argomenti:
         features: Matrice `(n_esempi, n_feature)`.
         labels: Etichette binarie.
         c: Parametro di regolarizzazione della SVM.
 
-    Returns:
+    Restituisce:
         Pipeline Scikit-learn con StandardScaler e LinearSVC addestrata.
     """
     classifier = make_pipeline(
@@ -274,17 +287,19 @@ def train_linear_svm(features: np.ndarray, labels: list[int] | np.ndarray, c: fl
     return classifier
 
 
-def evaluate_sklearn_classifier(classifier: Any, features: np.ndarray, labels: list[int] | np.ndarray, split: str) -> SplitMetrics:
+def evaluate_sklearn_classifier(
+    classifier: Any, features: np.ndarray, labels: list[int] | np.ndarray, split: str
+) -> SplitMetrics:
     """
     Valuta un classificatore Scikit-learn.
 
-    Args:
+    Argomenti:
         classifier: Modello con metodo `predict`.
         features: Feature dello split da valutare.
         labels: Etichette vere.
         split: Nome dello split, per esempio `validation` o `test`.
 
-    Returns:
+    Restituisce:
         Oggetto SplitMetrics con accuracy, F1, precision e recall.
     """
     preds = classifier.predict(features)
@@ -297,16 +312,18 @@ def evaluate_sklearn_classifier(classifier: Any, features: np.ndarray, labels: l
     )
 
 
-def classification_report_dict(classifier: Any, features: np.ndarray, labels: list[int] | np.ndarray) -> dict[str, Any]:
+def classification_report_dict(
+    classifier: Any, features: np.ndarray, labels: list[int] | np.ndarray
+) -> dict[str, Any]:
     """
     Produce il classification report di Scikit-learn in forma strutturata.
 
-    Args:
+    Argomenti:
         classifier: Modello con metodo `predict`.
         features: Feature dello split da valutare.
         labels: Etichette vere.
 
-    Returns:
+    Restituisce:
         Dizionario prodotto da `classification_report(..., output_dict=True)`.
     """
     preds = classifier.predict(features)
@@ -317,12 +334,12 @@ def tokenize_dataset_splits(ds_dict: Any, tokenizer: Any, max_length: int = 256)
     """
     Tokenizza tutti gli split una sola volta con Dataset.map.
 
-    Args:
+    Argomenti:
         ds_dict: DatasetDict originale con colonna `text`.
         tokenizer: Tokenizer Hugging Face.
         max_length: Lunghezza massima delle sequenze.
 
-    Returns:
+    Restituisce:
         DatasetDict tokenizzato con formato PyTorch per input_ids, attention_mask e label.
     """
 
@@ -330,7 +347,9 @@ def tokenize_dataset_splits(ds_dict: Any, tokenizer: Any, max_length: int = 256)
         return tokenizer(batch["text"], truncation=True, max_length=max_length)
 
     tokenized = ds_dict.map(preprocess, batched=True)
-    tokenized.set_format(type="torch", columns=["input_ids", "attention_mask", "label"], output_all_columns=True)
+    tokenized.set_format(
+        type="torch", columns=["input_ids", "attention_mask", "label"], output_all_columns=True
+    )
     return tokenized
 
 
@@ -338,11 +357,11 @@ def load_sequence_classifier(model_id: str = DISTILBERT_ID, num_labels: int = 2)
     """
     Carica DistilBERT con testa di classificazione.
 
-    Args:
+    Argomenti:
         model_id: Nome del checkpoint Hugging Face.
         num_labels: Numero di classi del task.
 
-    Returns:
+    Restituisce:
         Modello AutoModelForSequenceClassification pronto per il fine-tuning.
     """
     from transformers import AutoModelForSequenceClassification
@@ -354,10 +373,10 @@ def compute_sklearn_metrics(eval_pred: Any) -> dict[str, float]:
     """
     Calcola metriche per Hugging Face Trainer usando Scikit-learn.
 
-    Args:
+    Argomenti:
         eval_pred: Oggetto EvalPrediction oppure tupla `(logits, labels)`.
 
-    Returns:
+    Restituisce:
         Dizionario con accuracy, F1, precision e recall.
     """
     if hasattr(eval_pred, "predictions"):
@@ -389,7 +408,7 @@ def build_training_arguments(
     """
     Costruisce TrainingArguments con default conservativi.
 
-    Args:
+    Argomenti:
         output_dir: Cartella in cui salvare checkpoint e log.
         learning_rate: Learning rate iniziale.
         train_batch_size: Batch size di training per device.
@@ -402,7 +421,7 @@ def build_training_arguments(
             warning di deprecazione in Transformers 5.x.
         metric_for_best_model: Metrica usata per scegliere il checkpoint migliore.
 
-    Returns:
+    Restituisce:
         Istanza TrainingArguments.
     """
     from transformers import TrainingArguments
@@ -448,7 +467,7 @@ def build_trainer(
     """
     Crea un Trainer standard per classificazione testuale.
 
-    Args:
+    Argomenti:
         tokenizer: Tokenizer usato per costruire il data collator.
         training_args: Istanza TrainingArguments.
         train_dataset: Split di training tokenizzato.
@@ -456,10 +475,10 @@ def build_trainer(
         model_init: Funzione opzionale che crea una nuova istanza del modello.
         model: Modello gia' istanziato, alternativo a `model_init`.
 
-    Returns:
+    Restituisce:
         Istanza Trainer pronta per `train()` ed `evaluate()`.
 
-    Notes:
+    Note:
         Nell'ambiente notebook usato per il laboratorio, Transformers puo'
         aggiungere `NotebookProgressCallback`. In alcune versioni questo callback
         resta in uno stato non valido e fa fallire `evaluate()` con:
@@ -493,13 +512,13 @@ def disable_notebook_progress_callback(trainer: Any) -> Any:
     """
     Rimuove il callback notebook di Transformers quando e' presente.
 
-    Args:
+    Argomenti:
         trainer: Istanza Hugging Face Trainer gia' creata.
 
-    Returns:
+    Restituisce:
         La stessa istanza `trainer`, modificata in-place.
 
-    Notes:
+    Note:
         Serve anche se il Trainer e' stato creato prima di aggiornare
         `build_trainer()`: basta chiamare questa funzione prima di `evaluate()`.
     """
@@ -516,18 +535,18 @@ def suppress_subprocess_reader_unicode_errors() -> None:
     """
     Evita traceback rumorosi da thread interni che leggono subprocess output.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         None. Installa un `threading.excepthook` locale e idempotente.
 
-    Notes:
-        In questo ambiente Windows/Python 3.14, alcune librerie importate da PEFT
-        possono avviare controlli subprocess e fallire solo nel decoding del loro
-        output (`UnicodeDecodeError` dentro `_readerthread`). Il training LoRA
-        procede comunque. Sopprimiamo solo quel caso specifico per mantenere il
-        notebook leggibile; qualsiasi altro errore di thread resta visibile.
+    Note:
+        In alcuni ambienti Windows con versioni recenti di Python, librerie
+        importate da PEFT possono avviare controlli subprocess e fallire soltanto
+        nel decoding del loro output (`UnicodeDecodeError` in `_readerthread`).
+        Il training LoRA procede comunque. Viene soppresso soltanto quel caso
+        specifico; qualsiasi altro errore di thread resta visibile.
     """
     if getattr(threading, "_dla_lab2_unicode_reader_patch", False):
         return
@@ -554,14 +573,14 @@ def lora_sequence_classifier_init(
     """
     Crea DistilBERT per sequence classification con adapter LoRA.
 
-    Args:
+    Argomenti:
         model_id: Checkpoint Hugging Face di partenza.
         num_labels: Numero di classi.
         rank: Rango LoRA.
         alpha: Scala LoRA.
         dropout: Dropout applicato ai layer LoRA.
 
-    Returns:
+    Restituisce:
         Modello PEFT con pochi parametri addestrabili.
     """
     suppress_subprocess_reader_unicode_errors()
@@ -580,16 +599,18 @@ def lora_sequence_classifier_init(
     return get_peft_model(base_model, peft_config)
 
 
-def partial_freezing_sequence_classifier_init(model_id: str = DISTILBERT_ID, num_labels: int = 2, frozen_layers: int = 4) -> Any:
+def partial_freezing_sequence_classifier_init(
+    model_id: str = DISTILBERT_ID, num_labels: int = 2, frozen_layers: int = 4
+) -> Any:
     """
     Crea DistilBERT congelando embeddings e i primi layer transformer.
 
-    Args:
+    Argomenti:
         model_id: Checkpoint Hugging Face di partenza.
         num_labels: Numero di classi.
         frozen_layers: Numero di layer iniziali da congelare.
 
-    Returns:
+    Restituisce:
         Modello di classificazione con solo una parte del backbone addestrabile.
     """
     model = load_sequence_classifier(model_id=model_id, num_labels=num_labels)
@@ -608,10 +629,10 @@ def count_parameters(model: Any) -> dict[str, float]:
     """
     Conta parametri totali e addestrabili.
 
-    Args:
+    Argomenti:
         model: Modello PyTorch.
 
-    Returns:
+    Restituisce:
         Dizionario con `total`, `trainable` e `trainable_percent`.
     """
     total = sum(p.numel() for p in model.parameters())

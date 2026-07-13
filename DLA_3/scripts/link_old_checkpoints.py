@@ -5,47 +5,49 @@ from pathlib import Path
 
 
 def project_root() -> Path:
-    """Return the DLA_3 project root.
+    """Restituisce la root del progetto DLA 3.
 
-    Args:
-        None.
+    Argomenti:
+        Nessuno.
 
-    What it does:
-        Resolves the parent directory of `scripts`.
+    Operazione:
+        Risolve la directory genitore di `scripts`.
 
-    Outputs:
-        Path pointing to the working lab folder.
+    Output:
+        Percorso della cartella di lavoro del laboratorio.
     """
 
     return Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Link old checkpoints into this lab folder.")
+    parser = argparse.ArgumentParser(
+        description="Collega vecchi checkpoint alla cartella del laboratorio."
+    )
     parser.add_argument(
         "--source",
         type=Path,
         default=project_root() / "checkpoints" / "old_external",
-        help="Directory containing old checkpoints.",
+        help="Directory contenente i vecchi checkpoint.",
     )
     parser.add_argument(
         "--name",
         type=str,
         default="old",
-        help="Symlink name created under the local checkpoints folder.",
+        help="Nome del collegamento simbolico creato nella cartella locale dei checkpoint.",
     )
     args = parser.parse_args()
 
     source = args.source.expanduser().resolve()
     if not source.exists():
-        raise FileNotFoundError(f"Source checkpoint directory not found: {source}")
+        raise FileNotFoundError(f"Directory sorgente dei checkpoint non trovata: {source}")
 
     checkpoints = project_root() / "checkpoints"
     checkpoints.mkdir(parents=True, exist_ok=True)
 
     target = checkpoints / args.name
     if target.exists() or target.is_symlink():
-        print(f"Checkpoint link already exists: {target}")
+        print(f"Il collegamento ai checkpoint esiste già: {target}")
         print(f"Points to: {target.resolve()}")
         return
 

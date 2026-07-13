@@ -29,12 +29,12 @@ class CLIPAdapter(nn.Module):
     """
     Adapter leggero applicato alle feature immagine di CLIP.
 
-    Args:
+    Argomenti:
         feat_dim: Dimensione delle feature CLIP.
         bottleneck: Dimensione nascosta dell'MLP.
         alpha: Peso iniziale del ramo residuale.
 
-    Returns:
+    Restituisce:
         Modulo PyTorch che restituisce feature adattate.
     """
 
@@ -56,45 +56,51 @@ def get_device() -> str:
     """
     Seleziona automaticamente CUDA quando disponibile.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         Stringa `cuda` oppure `cpu`.
     """
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def load_open_clip_model(model_name: str = "ViT-B-16-quickgelu", pretrained: str = "openai", device: str | None = None) -> tuple[Any, Any, Any, str]:
+def load_open_clip_model(
+    model_name: str = "ViT-B-16-quickgelu", pretrained: str = "openai", device: str | None = None
+) -> tuple[Any, Any, Any, str]:
     """
     Carica un modello CLIP da open_clip.
 
-    Args:
+    Argomenti:
         model_name: Nome architettura open_clip.
         pretrained: Checkpoint da usare.
         device: Device opzionale. Se None viene scelto automaticamente.
 
-    Returns:
+    Restituisce:
         Tupla `(model, preprocess, tokenizer, device)`.
     """
     import open_clip
 
     device = device or get_device()
-    model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained, device=device)
+    model, _, preprocess = open_clip.create_model_and_transforms(
+        model_name, pretrained=pretrained, device=device
+    )
     tokenizer = open_clip.get_tokenizer(model_name)
     model.eval()
     return model, preprocess, tokenizer, device
 
 
-def load_imagenet_labels(path: str | Path = "imagenet_labels.json", download_if_missing: bool = False) -> list[str]:
+def load_imagenet_labels(
+    path: str | Path = "imagenet_labels.json", download_if_missing: bool = False
+) -> list[str]:
     """
     Carica i nomi semplici delle 1000 classi ImageNet.
 
-    Args:
+    Argomenti:
         path: Percorso del file JSON locale.
         download_if_missing: Se True scarica il file quando non esiste.
 
-    Returns:
+    Restituisce:
         Lista di 1000 nomi classe.
     """
     label_path = Path(path)
@@ -114,11 +120,11 @@ def load_imagenet_sketch(seed: int = 42, train_fraction: float = 0.8) -> tuple[A
     """
     Carica ImageNet-Sketch e crea split train/validation deterministici.
 
-    Args:
+    Argomenti:
         seed: Seed per lo shuffle.
         train_fraction: Frazione del dataset usata per il train.
 
-    Returns:
+    Restituisce:
         Coppia `(sketch_train, sketch_val)` di Dataset Hugging Face.
     """
     from datasets import load_dataset
@@ -129,16 +135,18 @@ def load_imagenet_sketch(seed: int = 42, train_fraction: float = 0.8) -> tuple[A
     return full.select(range(train_size)), full.select(range(train_size, len(full)))
 
 
-def build_clip_tensor_dataset(hf_dataset: Any, preprocess: Any, num_samples: int | None = None) -> TensorDataset:
+def build_clip_tensor_dataset(
+    hf_dataset: Any, preprocess: Any, num_samples: int | None = None
+) -> TensorDataset:
     """
     Preprocessa immagini HF in tensori CLIP e conserva le label.
 
-    Args:
+    Argomenti:
         hf_dataset: Dataset con colonne `image` e `label`.
         preprocess: Trasformazione immagine restituita da open_clip.
         num_samples: Numero massimo di esempi da usare. Se None usa tutto.
 
-    Returns:
+    Restituisce:
         TensorDataset `(pixel_values, labels)`.
     """
     n = min(num_samples or len(hf_dataset), len(hf_dataset))
@@ -155,11 +163,18 @@ def build_clip_tensor_dataset(hf_dataset: Any, preprocess: Any, num_samples: int
 
 
 @torch.no_grad()
-def build_text_features(model: Any, tokenizer: Any, class_names: list[str], prompt_template: str, device: str, batch_size: int = 100) -> torch.Tensor:
+def build_text_features(
+    model: Any,
+    tokenizer: Any,
+    class_names: list[str],
+    prompt_template: str,
+    device: str,
+    batch_size: int = 100,
+) -> torch.Tensor:
     """
     Costruisce le feature testuali normalizzate per tutte le classi.
 
-    Args:
+    Argomenti:
         model: Modello CLIP.
         tokenizer: Tokenizer open_clip.
         class_names: Lista di nomi classe.
@@ -167,7 +182,7 @@ def build_text_features(model: Any, tokenizer: Any, class_names: list[str], prom
         device: Device PyTorch.
         batch_size: Numero di prompt processati per batch.
 
-    Returns:
+    Restituisce:
         Tensore `(n_classi, feature_dim)` normalizzato.
     """
     model.eval()
@@ -185,18 +200,20 @@ def build_text_features(model: Any, tokenizer: Any, class_names: list[str], prom
 
 
 @torch.no_grad()
-def build_text_features_ensemble(model: Any, tokenizer: Any, class_names: list[str], prompt_templates: list[str], device: str) -> torch.Tensor:
+def build_text_features_ensemble(
+    model: Any, tokenizer: Any, class_names: list[str], prompt_templates: list[str], device: str
+) -> torch.Tensor:
     """
     Media feature testuali ottenute da piu' prompt.
 
-    Args:
+    Argomenti:
         model: Modello CLIP.
         tokenizer: Tokenizer open_clip.
         class_names: Lista di nomi classe.
         prompt_templates: Lista di template prompt.
         device: Device PyTorch.
 
-    Returns:
+    Restituisce:
         Tensore normalizzato `(n_classi, feature_dim)`.
     """
     all_features = [
@@ -209,17 +226,19 @@ def build_text_features_ensemble(model: Any, tokenizer: Any, class_names: list[s
 
 
 @torch.no_grad()
-def evaluate_zero_shot(model: Any, loader: DataLoader, text_features: torch.Tensor, device: str) -> float:
+def evaluate_zero_shot(
+    model: Any, loader: DataLoader, text_features: torch.Tensor, device: str
+) -> float:
     """
     Valuta CLIP in zero-shot classification.
 
-    Args:
+    Argomenti:
         model: Modello CLIP.
         loader: DataLoader che produce `(pixel_values, labels)`.
         text_features: Feature testuali normalizzate delle classi.
         device: Device PyTorch.
 
-    Returns:
+    Restituisce:
         Accuracy come float tra 0 e 1.
     """
     model.eval()
@@ -247,12 +266,12 @@ def precompute_image_features(model: Any, loader: DataLoader, device: str) -> Te
     """
     Precalcola le feature immagine CLIP per addestrare adapter leggeri.
 
-    Args:
+    Argomenti:
         model: Modello CLIP congelato.
         loader: DataLoader che produce `(pixel_values, labels)`.
         device: Device PyTorch.
 
-    Returns:
+    Restituisce:
         TensorDataset `(features, labels)` su CPU.
     """
     model.eval()
@@ -270,20 +289,22 @@ def precompute_image_features(model: Any, loader: DataLoader, device: str) -> Te
 
 
 @torch.no_grad()
-def evaluate_precomputed_features(loader: DataLoader, text_features: torch.Tensor, logit_scale: float, device: str) -> float:
+def evaluate_precomputed_features(
+    loader: DataLoader, text_features: torch.Tensor, logit_scale: float, device: str
+) -> float:
     """
     Valuta una classificazione zero-shot usando feature immagine gia' calcolate.
 
-    Args:
+    Argomenti:
         loader: DataLoader di feature `(features, labels)`.
         text_features: Feature testuali normalizzate delle classi.
         logit_scale: Scala dei logit del modello CLIP.
         device: Device PyTorch.
 
-    Returns:
+    Restituisce:
         Accuracy come float tra 0 e 1.
 
-    Notes:
+    Note:
         Questa funzione evita di rieseguire `model.encode_image()` quando si
         confrontano piu' prompt sugli stessi esempi. E' la scelta piu' efficiente
         per prompt study e confronto finale quando il backbone CLIP resta
@@ -304,16 +325,18 @@ def evaluate_precomputed_features(loader: DataLoader, text_features: torch.Tenso
     return correct / total
 
 
-def split_tensor_dataset(dataset: TensorDataset, train_fraction: float = 0.9, seed: int = 42) -> tuple[TensorDataset, TensorDataset]:
+def split_tensor_dataset(
+    dataset: TensorDataset, train_fraction: float = 0.9, seed: int = 42
+) -> tuple[TensorDataset, TensorDataset]:
     """
     Divide un TensorDataset in train e validation.
 
-    Args:
+    Argomenti:
         dataset: Dataset da dividere.
         train_fraction: Frazione da assegnare al train.
         seed: Seed per la divisione.
 
-    Returns:
+    Restituisce:
         Coppia `(train_dataset, val_dataset)`.
     """
     n_train = int(train_fraction * len(dataset))
@@ -342,7 +365,7 @@ def train_clip_adapter(
     """
     Addestra un CLIPAdapter su feature immagine gia' precalcolate.
 
-    Args:
+    Argomenti:
         adapter: Modulo CLIPAdapter.
         train_loader: DataLoader di feature train `(features, labels)`.
         val_loader: DataLoader di feature validation `(features, labels)`.
@@ -353,7 +376,7 @@ def train_clip_adapter(
         lr: Learning rate.
         weight_decay: Regolarizzazione AdamW.
 
-    Returns:
+    Restituisce:
         Lista di dizionari con loss train e validation per epoca.
     """
     adapter.to(device)
@@ -401,18 +424,24 @@ def train_clip_adapter(
 
 
 @torch.no_grad()
-def evaluate_adapter(adapter: CLIPAdapter, loader: DataLoader, text_features: torch.Tensor, logit_scale: float, device: str) -> float:
+def evaluate_adapter(
+    adapter: CLIPAdapter,
+    loader: DataLoader,
+    text_features: torch.Tensor,
+    logit_scale: float,
+    device: str,
+) -> float:
     """
     Valuta un adapter CLIP su feature immagine precalcolate.
 
-    Args:
+    Argomenti:
         adapter: Adapter addestrato.
         loader: DataLoader di feature `(features, labels)`.
         text_features: Feature testuali normalizzate.
         logit_scale: Scala dei logit CLIP.
         device: Device PyTorch.
 
-    Returns:
+    Restituisce:
         Accuracy come float tra 0 e 1.
     """
     adapter.eval()

@@ -14,11 +14,11 @@ def seed_everything(seed: int, deterministic: bool = False) -> None:
     Lo usiamo per rendere piu' riproducibili split, campionamenti casuali
     e inizializzazioni dei modelli.
 
-    Args:
+    Argomenti:
         seed: Valore numerico usato per inizializzare i generatori casuali.
         deterministic: Se True, forza operazioni piu' deterministiche ma potenzialmente piu' lente.
 
-    Returns:
+    Restituisce:
         None. La funzione modifica lo stato globale dei generatori casuali.
     """
     os.environ["PYTHONHASHSEED"] = str(seed)

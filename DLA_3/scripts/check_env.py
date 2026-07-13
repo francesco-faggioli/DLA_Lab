@@ -4,9 +4,9 @@ import importlib
 import platform
 import sys
 
-
 REQUIRED_MODULES = [
     "numpy",
+    "pandas",
     "matplotlib",
     "torch",
     "gymnasium",
@@ -17,25 +17,26 @@ REQUIRED_MODULES = [
 
 
 def module_version(name: str) -> str:
-    """Return an installed module version when available.
+    """Restituisce la versione di un modulo installato, quando disponibile.
 
-    Args:
-        name: Importable module name.
+    Argomenti:
+        name: Nome del modulo importabile.
 
-    What it does:
-        Imports the module and reads `__version__` if present.
+    Operazione:
+        Importa il modulo e legge `__version__`, se presente.
 
-    Outputs:
-        Version string or `installed`.
+    Output:
+        Stringa di versione oppure `installed`.
     """
 
     module = importlib.import_module(name)
-    return getattr(module, "__version__", "installed")
+    return getattr(module, "__version__", "installato")
 
 
 def main() -> None:
+    print("Interprete:", sys.executable)
     print("Python:", sys.version)
-    print("Platform:", platform.platform())
+    print("Piattaforma:", platform.platform())
     print()
 
     missing = []
@@ -45,7 +46,15 @@ def main() -> None:
             print(f"[OK]      {module_name}: {version}")
         except Exception as exc:
             missing.append(module_name)
-            print(f"[MISSING] {module_name}: {exc}")
+            print(f"[MANCANTE] {module_name}: {exc}")
+
+    try:
+        import dla_lab3
+
+        print(f"[OK]      dla_lab3: {dla_lab3.__file__}")
+    except Exception as exc:
+        missing.append("dla_lab3")
+        print(f"[MANCANTE] dla_lab3: {exc}")
 
     print()
     try:
@@ -55,23 +64,25 @@ def main() -> None:
             env = gym.make(env_id)
             obs, info = env.reset(seed=2112)
             print(
-                f"[ENV OK] {env_id}: obs_shape={env.observation_space.shape}, "
-                f"action_space={env.action_space}, first_obs_dtype={getattr(obs, 'dtype', type(obs))}"
+                f"[AMBIENTE OK] {env_id}: forma_osservazioni={env.observation_space.shape}, "
+                f"spazio_azioni={env.action_space}, tipo_prima_osservazione={getattr(obs, 'dtype', type(obs))}"
             )
             env.close()
     except Exception as exc:
-        missing.append("gymnasium environments")
-        print(f"[ENV ERROR] {exc}")
+        missing.append("ambienti gymnasium")
+        print(f"[ERRORE AMBIENTE] {exc}")
 
     if missing:
         print()
-        print("Missing or failing requirements:", ", ".join(missing))
-        print("Suggested conda install:")
-        print("  conda create -n DRL -c conda-forge python=3.12 torch gymnasium[box2d] matplotlib pygame jupyterlab jupyter ipykernel")
+        print("Requisiti mancanti o non funzionanti:", ", ".join(missing))
+        print("Installazione conda suggerita:")
+        print(
+            "  conda create -n DRL -c conda-forge python=3.12 torch gymnasium[box2d] matplotlib pygame jupyterlab jupyter ipykernel"
+        )
         raise SystemExit(1)
 
     print()
-    print("Environment check passed.")
+    print("Controllo dell'ambiente superato.")
 
 
 if __name__ == "__main__":

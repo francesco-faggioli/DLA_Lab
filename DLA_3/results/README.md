@@ -1,19 +1,19 @@
-# Lab 3 result evidence
+# Evidenze dei risultati del Lab 3
 
-These files expose the lightweight numerical evidence behind the report while checkpoints remain ignored.
+Questi file espongono le evidenze numeriche leggere alla base della relazione, mentre i checkpoint restano ignorati.
 
-| File | Content | Primary source |
+| File | Contenuto | Fonte primaria |
 | --- | --- | --- |
-| `cartpole_evaluation.csv` | Periodic evaluation of the three REINFORCE variants | Executed value-baseline notebook |
-| `method_summary.csv` | CartPole and LunarLander headline metrics | Executed notebooks |
-| `lunarlander_final_evaluation.json` | Complete 200-episode aggregate | Executed A2C notebook and local JSON artifact |
-| `lunarlander_temperature_sweep.csv` | Return variability and success rate across temperatures for the selected checkpoint | Local policy-configuration JSON artifact |
-| `lunarlander_policy_mode_comparison.csv` | Greedy policy versus the selected stochastic policy | Local policy-configuration JSON artifact |
-| `cartpole_visual_episodes.json` | Five qualitative greedy rollouts, seeds and terminal flags; no frames | Direct headless execution of `run_cartpole_visual_episodes` with `cartpole_reinforce_value_baseline.pt` |
-| `lunarlander_visual_episodes.json` | Five qualitative sampled rollouts, seeds and terminal flags; no frames | Direct headless execution of `run_lunar_visual_episodes` with the final checkpoint, sampled mode and `T=0.75` |
+| `cartpole_evaluation.csv` | Valutazione periodica delle tre varianti REINFORCE | Notebook della value baseline eseguito |
+| `method_summary.csv` | Metriche principali CartPole e LunarLander | Notebook eseguiti |
+| `lunarlander_final_evaluation.json` | Aggregato completo su 200 episodi | Notebook A2C eseguito e artefatto JSON locale |
+| `lunarlander_temperature_sweep.csv` | Variabilità del return e success rate tra temperature per il checkpoint selezionato | Artefatto JSON locale della configurazione della policy |
+| `lunarlander_policy_mode_comparison.csv` | Policy greedy rispetto alla policy stocastica selezionata | Artefatto JSON locale della configurazione della policy |
+| `cartpole_visual_episodes.json` | Cinque rollout qualitativi greedy, seed e flag terminali, senza frame | Esecuzione headless diretta di `run_cartpole_visual_episodes` con `cartpole_reinforce_value_baseline.pt` |
+| `lunarlander_visual_episodes.json` | Cinque rollout qualitativi campionati, seed e flag terminali, senza frame | Controllo headless precedente con lo stesso checkpoint, modalità sampled e `T=0.85`; distinto dalla valutazione finale a `T=0.75` |
 
-The final JSON intentionally stores only the checkpoint file name, not the obsolete absolute WSL path found in the local artifact.
+Il JSON finale memorizza intenzionalmente soltanto il nome del file di checkpoint, non il percorso WSL assoluto obsoleto presente nell'artefatto locale.
 
-The older `a2c_lunarlander_temperature_sweep.json` described a previous evaluation and is deliberately not used. The versioned sweep comes from `a2c_lunarlander_policy_config_selection.json`, which is the evidence used by the final notebook to select temperature `0.75`.
+Il precedente `a2c_lunarlander_temperature_sweep.json` descriveva una vecchia valutazione e non viene deliberatamente usato. Lo sweep versionato deriva da `a2c_lunarlander_policy_config_selection.json`, l'evidenza usata dal notebook finale per selezionare la temperatura `0.75`.
 
-The two visual JSON files were generated during the final repository review. They document short qualitative checks only and are not used to change or augment the headline evaluation metrics.
+I due JSON visuali sono stati generati durante la revisione finale della repository. Documentano soltanto brevi controlli qualitativi e non modificano né ampliano le metriche principali di valutazione.

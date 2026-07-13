@@ -1,111 +1,113 @@
-# DLA 3 — Policy Gradients and Advantage Actor-Critic
+# DLA 3 — Policy Gradient e Advantage Actor-Critic
 
-## Overview
+## Panoramica
 
-This is the only Deep Reinforcement Learning laboratory in the portfolio. It implements REINFORCE on CartPole, extends it with a learned value baseline, and develops a vectorized Advantage Actor-Critic (A2C) implementation for CartPole and LunarLander. The central methodological change is evaluation: training return is not treated as sufficient evidence, and candidate policies are compared over repeated episodes with fixed evaluation protocols.
+Questo è l'unico laboratorio di Deep Reinforcement Learning del portfolio. Implementa REINFORCE su CartPole, lo estende con una value baseline appresa e sviluppa un'implementazione vettorizzata di Advantage Actor-Critic (A2C) per CartPole e LunarLander. Il principale cambiamento metodologico riguarda la valutazione: il return di training non è considerato evidenza sufficiente e le policy candidate vengono confrontate su episodi ripetuti con protocolli di valutazione fissi.
 
-**Final index:** [`DLA_3.ipynb`](DLA_3.ipynb)
+**Indice finale:** [`DLA_3.ipynb`](DLA_3.ipynb)
 
-**Official assignment:** [`ASSIGNMENT.md`](ASSIGNMENT.md)
+**Consegna ufficiale:** [`ASSIGNMENT.md`](ASSIGNMENT.md)
 
-**Notebook guide:** [`notebooks/README.md`](notebooks/README.md)
+**Guida ai notebook:** [`notebooks/README.md`](notebooks/README.md)
 
-## Objectives and assignment coverage
+## Obiettivi e copertura della consegna
 
-| Requirement | Implementation | Evidence | Status |
+| Requisito | Implementazione | Evidenza | Stato |
 | --- | --- | --- | ---: |
-| Exercise 1: improve REINFORCE evaluation | Periodic multi-episode greedy evaluation and checkpoint selection | [`01_cartpole_reinforce_evaluation.ipynb`](notebooks/01_cartpole_reinforce_evaluation.ipynb) | Completed |
-| Exercise 2: learned value baseline | Separate value network, advantage, value loss | [`02_cartpole_value_baseline.ipynb`](notebooks/02_cartpole_value_baseline.ipynb) | Completed |
-| Exercise 3.1: A2C | Actor-critic updates and vectorized environments | [`03_a2c_cartpole_lunarlander.ipynb`](notebooks/03_a2c_cartpole_lunarlander.ipynb) | Completed |
-| Exercise 3.1: harder environment | Checkpoint, action-mode, and temperature evaluation on LunarLander | Same notebook | Completed |
+| Esercizio 1: migliorare la valutazione REINFORCE | Valutazione greedy periodica su più episodi e selezione del checkpoint | [`01_cartpole_reinforce_evaluation.ipynb`](notebooks/01_cartpole_reinforce_evaluation.ipynb) | Completato |
+| Esercizio 2: value baseline appresa | Rete del valore separata, advantage, value loss | [`02_cartpole_value_baseline.ipynb`](notebooks/02_cartpole_value_baseline.ipynb) | Completato |
+| Esercizio 3.1: A2C | Aggiornamenti actor-critic e ambienti vettorizzati | [`03_a2c_cartpole_lunarlander.ipynb`](notebooks/03_a2c_cartpole_lunarlander.ipynb) | Completato |
+| Esercizio 3.1: ambiente più difficile | Valutazione di checkpoint, modalità delle azioni e temperatura su LunarLander | Stesso notebook | Completato |
 
-## Environment and problem definition
+## Ambiente e definizione del problema
 
 ### CartPole-v1
 
-CartPole exposes four continuous observations: cart position/velocity and pole angle/angular velocity. The action space has two discrete choices, applying force left or right. Each non-terminal step returns `+1`; an episode ends when the pole/cart leaves the permitted range or is truncated at 500 steps.
+CartPole espone quattro osservazioni continue: posizione/velocità del carrello e angolo/velocità angolare del palo. Lo spazio delle azioni contiene due scelte discrete che applicano una forza verso sinistra o destra. Ogni step non terminale restituisce `+1`; un episodio termina quando palo o carrello superano l'intervallo consentito oppure viene troncato a 500 step.
 
-The Gymnasium registration threshold is an average return of `475`. This implementation uses `475` for the A2C solved flag and a stricter `500` periodic-evaluation threshold for the REINFORCE comparisons. Therefore “reached 500” below means the 20-episode periodic evaluation averaged the maximum episode length; it is not a vague visual claim.
+La soglia registrata da Gymnasium è un return medio di `475`. Questa implementazione usa `475` per il flag solved di A2C e una soglia periodica più severa di `500` nei confronti REINFORCE. Pertanto, “raggiunto 500” significa che la valutazione periodica su 20 episodi ha raggiunto la durata massima media, non una generica valutazione visuale.
 
 ### LunarLander-v3
 
-LunarLander provides an eight-dimensional observation including position, velocity, angle, angular velocity, and leg-contact indicators. Four discrete actions select no engine, left orientation engine, main engine, or right orientation engine. Reward combines progress, fuel penalties, leg contact, landing, and crash signals. Episodes terminate on landing/crash and may be truncated by the time limit.
+LunarLander fornisce un'osservazione a otto dimensioni comprendente posizione, velocità, angolo, velocità angolare e indicatori di contatto delle gambe. Quattro azioni discrete selezionano nessun motore, motore laterale sinistro, motore principale o motore laterale destro. Il reward combina progresso, penalità del carburante, contatto delle gambe, atterraggio e schianto. Gli episodi terminano all'atterraggio o allo schianto e possono essere troncati dal limite temporale.
 
-The report uses return `>= 200` as its success criterion, consistent with the configured evaluation rule. The environment is harder because the policy must control translation, rotation, fuel use, contact, and terminal behaviour under stochastic action selection.
+La relazione usa return `>= 200` come criterio di successo, coerentemente con la regola configurata. L'ambiente è più difficile perché la policy deve controllare traslazione, rotazione, carburante, contatto e comportamento terminale in presenza di campionamento stocastico delle azioni.
 
 ## REINFORCE
 
-The policy is a two-hidden-layer MLP (`4 → 128 → 128 → 2`) followed by a categorical distribution. Complete trajectories are sampled. Discounted returns are computed backward and, in the standard variant, standardized within the episode. The policy objective is
+La policy è un MLP con due layer nascosti (`4 → 128 → 128 → 2`) seguito da una distribuzione categorica. Vengono campionate traiettorie complete. I return scontati sono calcolati all'indietro e, nella variante standard, standardizzati all'interno dell'episodio. L'obiettivo della policy è
 
 \[
 L_{policy} = -\sum_t \log \pi_\theta(a_t|s_t)\,G_t - \beta H(\pi_\theta(\cdot|s_t)).
 \]
 
-The original running average of training returns is useful for visualization but is a weak selection rule: it mixes data generated by changing policies and is sensitive to high-variance episodes. The revised notebook evaluates the current policy greedily every 50 training episodes over 20 fresh episodes and saves the best evaluation checkpoint.
+La media mobile originale dei return di training è utile per la visualizzazione, ma costituisce una regola di selezione debole: combina dati generati da policy in evoluzione ed è sensibile a episodi ad alta varianza. Il notebook rivisto valuta la policy corrente in modalità greedy ogni 50 episodi di training su 20 episodi nuovi e salva il miglior checkpoint di valutazione.
 
-| Parameter | REINFORCE value |
+| Parametro | Valore REINFORCE |
 | --- | ---: |
 | Seed | 2112 |
-| Discount factor | 0.98 |
-| Policy learning rate | 3e-4 |
-| Training episodes | 1,000 |
-| Evaluation interval | 50 episodes |
-| Evaluation episodes | 20 |
-| Entropy coefficient | 0.01 |
+| Fattore di sconto | 0.98 |
+| Learning rate della policy | 3e-4 |
+| Episodi di training | 1,000 |
+| Intervallo di valutazione | 50 episodi |
+| Episodi di valutazione | 20 |
+| Coefficiente di entropia | 0.01 |
 | Gradient clipping | 1.0 |
-| Selection policy | Greedy |
+| Policy di selezione | Greedy |
 
-### Training and periodic evaluation
+### Training e valutazione periodica
 
-![REINFORCE training returns](figures/reinforce_training_returns.png)
+![Return di training REINFORCE](figures/reinforce_training_returns.png)
 
-Training returns are noisy and do not monotonically track policy quality. This is expected for an on-policy Monte Carlo estimator and is why the smoothed curve is descriptive, not the checkpoint criterion.
+I return di training sono rumorosi e non seguono in modo monotono la qualità della policy. È un comportamento atteso per uno stimatore Monte Carlo on-policy; la curva smussata è quindi descrittiva e non rappresenta il criterio di selezione del checkpoint.
 
-![REINFORCE periodic evaluation](figures/reinforce_periodic_evaluation.png)
+![Valutazione periodica REINFORCE](figures/reinforce_periodic_evaluation.png)
 
-The standardized-return variant reached its best periodic mean of `489.35` at episode 250 but finished at `190.20`. The collapse after the peak is direct evidence that a final-policy-only report would be misleading.
+La variante con return standardizzati ha raggiunto il miglior valore medio periodico di `489.35` all'episodio 250, ma ha terminato a `190.20`. Il crollo successivo al picco dimostra direttamente che una relazione basata soltanto sulla policy finale sarebbe fuorviante.
 
-## Learned value baseline
+## Value baseline appresa
 
-A second network estimates \(V_\phi(s_t)\). The policy uses the detached advantage
+Una seconda rete stima \(V_\phi(s_t)\). La policy usa l'advantage sganciato dal gradiente
 
 \[
 A_t = G_t - V_\phi(s_t),
 \]
 
-while the critic minimizes mean-squared error between predicted values and Monte Carlo returns. Subtracting the state-dependent baseline does not change the expected policy gradient, but it can reduce variance. Policy and value optimizers are separate.
+mentre il critic minimizza l'errore quadratico medio tra valori predetti e return Monte Carlo. Sottrarre la baseline dipendente dallo stato non cambia il policy gradient atteso, ma può ridurne la varianza. Gli ottimizzatori di policy e valore sono separati.
 
-| Parameter | Value-baseline configuration |
+| Parametro | Configurazione value baseline |
 | --- | ---: |
-| Policy learning rate | 3e-4 |
-| Value learning rate | 1e-3 |
-| Discount factor | 0.98 |
-| Training episodes | 1,000 |
-| Evaluation cadence / episodes | 50 / 20 |
-| Entropy coefficient | 0.01 |
+| Learning rate della policy | 3e-4 |
+| Learning rate del valore | 1e-3 |
+| Fattore di sconto | 0.98 |
+| Episodi di training | 1,000 |
+| Frequenza / episodi di valutazione | 50 / 20 |
+| Coefficiente di entropia | 0.01 |
 | Gradient clipping | 1.0 |
 
-### REINFORCE comparison
+### Confronto REINFORCE
 
-| Method | Best periodic return | Final periodic return | First evaluation at 500 |
+| Metodo | Miglior return periodico | Return periodico finale | Prima valutazione a 500 |
 | --- | ---: | ---: | ---: |
-| Standardized returns | 489.35 | 190.20 | Never |
-| Raw returns | 372.85 | 219.70 | Never |
-| Learned value baseline | **500.00** | **500.00** | Episode 700 |
+| Return standardizzati | 489.35 | 190.20 | Mai |
+| Return grezzi | 372.85 | 219.70 | Mai |
+| Value baseline appresa | **500.00** | **500.00** | Episodio 700 |
 
-![CartPole value-baseline comparison](figures/cartpole_value_baseline_comparison.png)
+![Confronto della value baseline su CartPole](figures/cartpole_value_baseline_comparison.png)
 
-The learned baseline was the only variant to reach and retain the strict 500-step periodic mean. Raw returns initially learned slowly and remained below the standardized variant's peak. This supports the variance-reduction motivation, while still reflecting a single training seed rather than claiming universal superiority.
+![Confronto dei return principali CartPole](figures/cartpole_primary_returns.svg)
 
-![CartPole evaluation curves](figures/cartpole_evaluation_curves.svg)
+La baseline appresa è stata l'unica variante a raggiungere e mantenere la severa media periodica di 500 step. I return grezzi hanno appreso lentamente all'inizio e sono rimasti sotto il picco della variante standardizzata. Il risultato supporta la motivazione legata alla riduzione di varianza, pur riferendosi a un singolo seed di training e senza pretendere superiorità universale.
 
-The versioned curves in [`cartpole_evaluation.csv`](results/cartpole_evaluation.csv) expose every 50-episode evaluation point. The value-baseline policy becomes stable late in training; the other variants remain highly non-monotonic.
+![Curve di valutazione CartPole](figures/cartpole_evaluation_curves.svg)
 
-### Optional five-episode CartPole visualization
+Le curve versionate in [`cartpole_evaluation.csv`](results/cartpole_evaluation.csv) espongono ogni punto di valutazione a intervalli di 50 episodi. La policy con value baseline diventa stabile nella fase avanzata del training; le altre varianti rimangono fortemente non monotone.
 
-The qualitative visualization uses `cartpole_reinforce_value_baseline.pt`, the final model adopted by the directly comparable 20-episode REINFORCE experiment. The A2C result uses a different 100-episode protocol, so it is reported separately rather than used to replace this selection. Set `RUN_CARTPOLE_VISUALIZATION = True` in [`02_cartpole_value_baseline.ipynb`](notebooks/02_cartpole_value_baseline.ipynb) to render five local `rgb_array` animations with greedy actions.
+### Visualizzazione CartPole facoltativa su cinque episodi
 
-| Episode | Seed | Return | Length | Terminated | Truncated |
+La visualizzazione qualitativa usa `cartpole_reinforce_value_baseline.pt`, il modello finale adottato dall'esperimento REINFORCE direttamente confrontabile su 20 episodi. Il risultato A2C usa un protocollo differente a 100 episodi, quindi è riportato separatamente e non sostituisce questa selezione. Impostare `RUN_CARTPOLE_VISUALIZATION = True` in [`02_cartpole_value_baseline.ipynb`](notebooks/02_cartpole_value_baseline.ipynb) per generare localmente cinque animazioni `rgb_array` con azioni greedy.
+
+| Episodio | Seed | Return | Lunghezza | Terminato | Troncato |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 1 | 805471 | 500 | 500 | False | True |
 | 2 | 233426 | 500 | 500 | False | True |
@@ -113,192 +115,192 @@ The qualitative visualization uses `cartpole_reinforce_value_baseline.pt`, the f
 | 4 | 994769 | 500 | 500 | False | True |
 | 5 | 795806 | 500 | 500 | False | True |
 
-The seeds were generated without replacement from seed base `11112`; every rollout reached the CartPole-v1 time limit. A headless smoke test collected 501 frames per episode with shape `400 x 600 x 3`. The lightweight evidence is [`cartpole_visual_episodes.json`](results/cartpole_visual_episodes.json); frames and multi-megabyte HTML videos are intentionally excluded. These five rollouts are a behavioral check, not a new statistical evaluation.
+I seed sono stati generati senza reinserimento dalla base `11112`; ogni rollout ha raggiunto il limite temporale di CartPole-v1. Un test headless ha raccolto 501 frame per episodio, ciascuno di forma `400 x 600 x 3`. L'evidenza leggera è [`cartpole_visual_episodes.json`](results/cartpole_visual_episodes.json); frame e video HTML da più megabyte sono intenzionalmente esclusi. Questi cinque rollout sono un controllo comportamentale, non una nuova valutazione statistica.
 
 ## Advantage Actor-Critic (A2C)
 
-A2C updates an actor and critic from short vectorized rollouts. For each transition, the temporal-difference target and advantage are
+A2C aggiorna actor e critic da brevi rollout vettorizzati. Per ogni transizione, il target temporal-difference e l'advantage sono
 
 \[
 y_t = r_t + \gamma (1-d_t)V_\phi(s_{t+1}), \qquad
 A_t = y_t - V_\phi(s_t).
 \]
 
-The actor maximizes action log-probability weighted by the detached advantage plus entropy; the critic minimizes value error. Vectorized environments collect multiple trajectories per update. Correct terminated/truncated masks are important: a true terminal state must not bootstrap, while time-limit handling is tracked separately.
+L'actor massimizza la log-probabilità dell'azione pesata per l'advantage sganciato più l'entropia; il critic minimizza l'errore sul valore. Gli ambienti vettorizzati raccolgono più traiettorie per aggiornamento. Le mask `terminated`/`truncated` corrette sono importanti: uno stato realmente terminale non deve eseguire bootstrap, mentre il raggiungimento del limite temporale viene tracciato separatamente.
 
-### CartPole A2C
+### A2C su CartPole
 
-| Parameter | Value |
+| Parametro | Valore |
 | --- | ---: |
-| Discount factor | 0.99 |
+| Fattore di sconto | 0.99 |
 | Learning rate | 3e-4 |
-| GAE lambda | 0.95 |
-| Entropy coefficient | 0.01 |
+| Lambda GAE | 0.95 |
+| Coefficiente di entropia | 0.01 |
 | Gradient clipping | 0.5 |
-| Maximum training episodes | 800 |
-| Evaluation cadence / episodes | 25 / 20 |
-| Operational solved threshold | 475 |
+| Massimo numero di episodi di training | 800 |
+| Frequenza / episodi di valutazione | 25 / 20 |
+| Soglia operativa solved | 475 |
 
-The saved A2C checkpoint was marked solved during training. Greedy evaluation produced average return `494.51` with standard deviation `19.68`, confirming that the local actor-critic implementation can solve the simpler control environment.
+Il checkpoint A2C salvato è stato contrassegnato come solved durante il training. La valutazione greedy ha prodotto return medio `494.51` con deviazione standard `19.68`, confermando che l'implementazione actor-critic locale risolve l'ambiente di controllo più semplice.
 
-### LunarLander A2C configuration
+### Configurazione A2C LunarLander
 
-The final baseline starts from the RL Baselines3 Zoo A2C reference for LunarLander and adapts it to the local implementation. The exact reference is [`hyperparams/a2c.yml`](https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/a2c.yml), not a copied implementation.
+La baseline finale parte dal riferimento A2C di RL Baselines3 Zoo per LunarLander e lo adatta all'implementazione locale. Il riferimento esatto è [`hyperparams/a2c.yml`](https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/a2c.yml), non un'implementazione copiata.
 
-| Parameter | Reference-informed value | Local use |
+| Parametro | Valore derivato dal riferimento | Uso locale |
 | --- | ---: | --- |
-| Parallel environments | 8 | Same for `sb3_zoo_raw_current` |
-| Total timesteps | 200,000 in reference note | 300,000 for final baseline; other named refinements have explicit budgets |
-| Rollout steps | 5 | Same |
-| Discount factor | 0.995 | Same |
-| Learning rate | 8.3e-4 | Same initial value, linearly decayed in final baseline |
-| Entropy coefficient | 1e-5 | Same final baseline value |
-| GAE lambda | 1.0 | Same |
-| Optimizer | RMSprop | Same |
-| Reward scale | — | 1.0 in final raw-reward baseline |
-| Evaluation episodes during selection | — | 100 |
-| Final evaluation episodes | — | 200 |
+| Ambienti paralleli | 8 | Uguale per `sb3_zoo_raw_current` |
+| Step totali | 200,000 nel riferimento | 300,000 per la baseline finale; gli altri raffinamenti denominati hanno budget espliciti |
+| Step per rollout | 5 | Uguale |
+| Fattore di sconto | 0.995 | Uguale |
+| Learning rate | 8.3e-4 | Stesso valore iniziale, ridotto linearmente nella baseline finale |
+| Coefficiente di entropia | 1e-5 | Uguale nella baseline finale |
+| Lambda GAE | 1.0 | Uguale |
+| Ottimizzatore | RMSprop | Uguale |
+| Scala del reward | — | 1.0 nella baseline finale con reward grezzo |
+| Episodi di valutazione durante la selezione | — | 100 |
+| Episodi di valutazione finale | — | 200 |
 
-Additional separate-actor/critic and landing-refinement presets were evaluated. They were not hidden when unsuccessful: several checkpoints produced negative or low mean returns, and the clean RL-Zoo-style checkpoint remained the strongest candidate. AI suggestions were treated as hypotheses; the final checkpoint and policy configuration were selected from measured evaluations.
+Sono stati valutati ulteriori preset con actor/critic separati e raffinamento dell'atterraggio. Gli insuccessi non sono stati nascosti: diversi checkpoint hanno prodotto return medi negativi o bassi, mentre il checkpoint pulito in stile RL-Zoo è rimasto il candidato migliore. I suggerimenti dell'IA sono stati trattati come ipotesi; checkpoint e configurazione finali sono stati selezionati da valutazioni misurate.
 
-## LunarLander checkpoint and policy selection
+## Selezione del checkpoint e della policy LunarLander
 
-The selection pipeline has three stages:
+La pipeline di selezione ha tre fasi:
 
-1. evaluate available checkpoint variants over 100 episodes;
-2. compare greedy and sampled policies over a temperature grid;
-3. evaluate the selected checkpoint/mode/temperature over 200 fresh episodes.
+1. valutare le varianti di checkpoint disponibili su 100 episodi;
+2. confrontare policy greedy e campionate su una griglia di temperature;
+3. valutare checkpoint, modalità e temperatura selezionati su 200 episodi nuovi.
 
-The checkpoint `a2c_lunarlander_sb3_zoo_raw_current.pt` led the initial candidate comparison with average return `158.08`, standard deviation `108.65`, and success rate `54%`. The notebook then evaluated action-selection configurations for that and other top checkpoints.
+Il checkpoint `a2c_lunarlander_sb3_zoo_raw_current.pt` ha guidato il confronto iniziale con return medio `158.08`, deviazione standard `108.65` e success rate `54%`. Il notebook ha poi valutato configurazioni di selezione delle azioni per questo e altri checkpoint migliori.
 
-![LunarLander checkpoint selection](figures/lunarlander_checkpoint_selection.png)
+![Selezione del checkpoint LunarLander](figures/lunarlander_checkpoint_selection.png)
 
-The checkpoint comparison includes unsuccessful current and refinement variants. This makes the selection failure modes visible instead of reporting only the winner.
+Il confronto include varianti correnti e di raffinamento non riuscite. In questo modo le modalità di fallimento restano visibili invece di riportare soltanto il vincitore.
 
-### Temperature sweep for the selected checkpoint
+### Analisi della temperatura per il checkpoint selezionato
 
-![LunarLander temperature sweep](figures/lunarlander_temperature_sweep.svg)
+![Analisi della temperatura LunarLander](figures/lunarlander_temperature_sweep.svg)
 
-Error bars show one standard deviation over 100 episodes. Mean return and success rate do not rank temperatures identically: `T=0.45` had the highest mean in this subset (`179.65`), while `T=0.95` had the highest success rate (`61%`). Temperature `0.75` was selected by the notebook's reliability score because it combined return `170.46`, success `59%`, and zero truncations. Source: [`lunarlander_temperature_sweep.csv`](results/lunarlander_temperature_sweep.csv).
+Le barre d'errore mostrano una deviazione standard su 100 episodi. Return medio e success rate non ordinano le temperature nello stesso modo: `T=0.45` ha il return medio più alto nel sottoinsieme (`179.65`), mentre `T=0.95` ha il maggior success rate (`61%`). Il notebook ha selezionato `T=0.75` tramite il punteggio di affidabilità, poiché combina return `170.46`, successo `59%` e nessun troncamento. Fonte: [`lunarlander_temperature_sweep.csv`](results/lunarlander_temperature_sweep.csv).
 
-### Greedy versus stochastic policy
+### Policy greedy rispetto a stocastica
 
-![LunarLander policy modes](figures/lunarlander_policy_mode_comparison.svg)
+![Modalità della policy LunarLander](figures/lunarlander_policy_mode_comparison.svg)
 
-On the same selected checkpoint, greedy inference averaged `136.31` with `31%` success and `2%` truncation, whereas sampling at `T=0.75` averaged `170.46` with `59%` success and no truncations. Stochastic action selection was therefore retained for final evaluation. Source: [`lunarlander_policy_mode_comparison.csv`](results/lunarlander_policy_mode_comparison.csv).
+Sullo stesso checkpoint selezionato, l'inferenza greedy ha ottenuto una media di `136.31`, successo `31%` e troncamento `2%`, mentre il campionamento con `T=0.75` ha ottenuto `170.46`, successo `59%` e nessun troncamento. La selezione stocastica delle azioni è stata quindi mantenuta per la valutazione finale. Fonte: [`lunarlander_policy_mode_comparison.csv`](results/lunarlander_policy_mode_comparison.csv).
 
-## Final LunarLander evaluation
+## Valutazione finale LunarLander
 
-| Metric | Observed value |
+| Metrica | Valore osservato |
 | --- | ---: |
 | Checkpoint | `a2c_lunarlander_sb3_zoo_raw_current.pt` |
-| Policy | Sampled, temperature 0.75 |
-| Evaluation episodes | 200 |
-| Average return | **165.76** |
-| Return standard deviation | **100.56** |
-| Minimum / maximum return | -168.77 / 294.88 |
-| Average episode length | 487.83 |
-| Success criterion | Return >= 200 |
+| Policy | Campionata, temperatura 0.75 |
+| Episodi di valutazione | 200 |
+| Return medio | **165.76** |
+| Deviazione standard del return | **100.56** |
+| Return minimo / massimo | -168.77 / 294.88 |
+| Lunghezza media dell'episodio | 487.83 |
+| Criterio di successo | Return >= 200 |
 | Success rate | **56.0%** |
-| Terminated / truncated | 196 / 4 |
-| Truncation rate | 2.0% |
+| Terminati / troncati | 196 / 4 |
+| Tasso di troncamento | 2.0% |
 
-![LunarLander final evaluation](figures/lunarlander_final_evaluation.svg)
+![Valutazione finale LunarLander](figures/lunarlander_final_evaluation.svg)
 
-The normalized overview combines metrics with different units only for orientation; the exact values are in the table and [`lunarlander_final_evaluation.json`](results/lunarlander_final_evaluation.json). The mean remains below the configured 200-point success threshold and the standard deviation is large. The correct conclusion is therefore not that LunarLander is universally “solved,” but that this policy succeeds in `56%` of the 200 fixed-protocol episodes.
+La panoramica normalizzata combina metriche con unità differenti soltanto per orientamento; i valori esatti sono nella tabella e in [`lunarlander_final_evaluation.json`](results/lunarlander_final_evaluation.json). La media resta sotto la soglia di successo configurata a 200 punti e la deviazione standard è ampia. La conclusione corretta non è quindi che LunarLander sia universalmente “risolto”, ma che questa policy abbia successo nel `56%` dei 200 episodi del protocollo fisso.
 
-### Action frequencies
+### Frequenze delle azioni
 
-![LunarLander action frequencies](figures/lunarlander_action_frequencies.svg)
+![Frequenze delle azioni LunarLander](figures/lunarlander_action_frequencies.svg)
 
-Across complete episodes, the main engine accounted for `46.8%` of actions. In the final quarter, no-op rose to `53.9%` while side-engine use declined. This pattern is consistent with coasting/stabilization near the end of successful trajectories, but action frequency alone does not prove landing quality.
+Negli episodi completi, il motore principale costituisce il `46.8%` delle azioni. Nell'ultimo quarto, il no-op sale al `53.9%`, mentre l'uso dei motori laterali diminuisce. Il comportamento è compatibile con una fase di inerzia/stabilizzazione al termine delle traiettorie riuscite, ma la sola frequenza delle azioni non dimostra la qualità dell'atterraggio.
 
-The final checkpoint was also tested headlessly on five reproducible seeds (`100000` through `100004`) with sampled actions at `T=0.75`. Returns were `232.20`, `184.65`, `225.38`, `198.05`, and `167.72`; all episodes terminated normally and none was truncated. The code is disabled by default through `RUN_LUNAR_VISUALIZATION = False`, while [`lunarlander_visual_episodes.json`](results/lunarlander_visual_episodes.json) retains seed, return, length, terminal flags, action frequencies, and frame shape. The animations are available locally but their HTML payloads are not versioned. This five-episode sample is qualitative and does not replace the 200-episode final evaluation.
+Un controllo headless precedente è conservato su cinque seed riproducibili (da `100000` a `100004`), con azioni campionate a `T=0.85`. I return sono stati `234.61`, `189.29`, `7.06`, `201.54` e `174.26`; tutti gli episodi sono terminati normalmente e nessuno è stato troncato. Questo controllo qualitativo precede la scelta finale a `T=0.75` e non va confuso con la valutazione canonica su 200 episodi. Il codice è disattivato per impostazione predefinita tramite `RUN_LUNAR_VISUALIZATION = False`, mentre [`lunarlander_visual_episodes.json`](results/lunarlander_visual_episodes.json) conserva configurazione, seed, return, lunghezza, flag terminali, frequenze delle azioni e forma dei frame. Le animazioni sono disponibili localmente ma il loro payload HTML non è versionato.
 
-## What worked, what did not, and why
+## Cosa ha funzionato, cosa no e perché
 
-**Worked:** periodic evaluation exposed policy collapse that a running average hid; a learned value baseline stabilized CartPole; A2C solved CartPole under the local threshold; vectorized short rollouts made LunarLander training practical; checkpoint and temperature selection improved reliability over greedy inference.
+**Ha funzionato:** la valutazione periodica ha esposto crolli della policy nascosti dalla media mobile; una value baseline appresa ha stabilizzato CartPole; A2C ha risolto CartPole secondo la soglia locale; brevi rollout vettorizzati hanno reso pratico il training di LunarLander; la selezione di checkpoint e temperatura ha migliorato l'affidabilità rispetto all'inferenza greedy.
 
-**Did not work as well:** standardized REINFORCE lost performance after an early peak; raw-return REINFORCE learned slowly; several LunarLander refinement checkpoints degraded the clean baseline; greedy inference underperformed stochastic sampling; final LunarLander return variability remained high.
+**Ha funzionato meno:** REINFORCE standardizzato ha perso prestazioni dopo un picco iniziale; REINFORCE con return grezzi ha appreso lentamente; diversi checkpoint di raffinamento LunarLander hanno peggiorato la baseline pulita; l'inferenza greedy è stata inferiore al campionamento stocastico; la variabilità finale di LunarLander è rimasta elevata.
 
-**Problems resolved:** evaluation is separated from training; checkpoints store comparable metadata; absolute legacy paths are no longer used in public evidence; terminal/truncation statistics are explicit; long training is disabled in quick mode; Box2D/WSL requirements are documented.
+**Problemi risolti:** la valutazione è separata dal training; i checkpoint memorizzano metadati confrontabili; i vecchi percorsi assoluti non sono più usati nelle evidenze pubbliche; le statistiche di terminazione/troncamento sono esplicite; il training lungo è disattivato in modalità rapida; i requisiti Box2D/WSL sono documentati.
 
-## Limitations
+## Limiti
 
-- Training uses one main seed and checkpoint selection reuses a finite candidate set.
-- The final 200-episode JSON stores aggregate statistics, not every return; the standard deviation is available but a full histogram cannot be reconstructed.
-- Temperature selection and final evaluation use different evaluation seeds, so their means are expected to differ.
-- LunarLander does not meet a 100% success criterion and has substantial return variance.
-- Checkpoints are not versioned because of size; notebook outputs and lightweight metrics are the public evidence.
-- Results depend on Gymnasium/Box2D version and are not claimed to be bitwise deterministic across systems.
+- Il training usa un solo seed principale e la selezione riutilizza un insieme finito di candidati.
+- Il JSON finale su 200 episodi conserva statistiche aggregate, non ogni return; la deviazione standard è disponibile ma non è possibile ricostruire un istogramma completo.
+- Selezione della temperatura e valutazione finale usano seed differenti, quindi è atteso che le medie differiscano.
+- LunarLander non raggiunge un criterio di successo del 100% e presenta un'elevata varianza dei return.
+- I checkpoint non sono versionati per ragioni di dimensione; output dei notebook e metriche leggere costituiscono l'evidenza pubblica.
+- I risultati dipendono dalle versioni di Gymnasium/Box2D e non sono dichiarati deterministicamente identici bit per bit tra sistemi.
 
-## Reproducibility
+## Riproducibilità
 
-Linux or WSL is recommended. Install root dependencies, verify `gymnasium.make("LunarLander-v3")`, and run the notebooks in order. In quick mode, all expensive training, selection, full-evaluation, and rendering flags remain `False`; the notebooks load versioned CSV/JSON evidence without requiring checkpoints. Full mode requires explicitly enabling the relevant flag and sufficient time for up to hundreds of thousands of vectorized environment steps.
+Linux o WSL è consigliato. Installare le dipendenze dalla root, verificare `gymnasium.make("LunarLander-v3")` ed eseguire i notebook in ordine. In modalità rapida, tutti i flag relativi a training costosi, selezione, valutazione completa e rendering restano `False`; i notebook caricano le evidenze CSV/JSON versionate senza richiedere checkpoint. La modalità completa richiede di abilitare esplicitamente il flag pertinente e tempo sufficiente per centinaia di migliaia di step vettorizzati.
 
-The central configuration is [`config/lab3_defaults.yaml`](config/lab3_defaults.yaml). Figures can be regenerated without training using `python tools/build_report_assets.py` from the repository root.
+La configurazione centrale è [`config/lab3_defaults.yaml`](config/lab3_defaults.yaml). Le figure possono essere rigenerate senza training eseguendo `python tools/build_report_assets.py` dalla root.
 
-## File structure
+## Struttura dei file
 
-| Path | Purpose |
+| Percorso | Scopo |
 | --- | --- |
-| `DLA_3.ipynb` | GitHub-readable laboratory index |
-| `notebooks/01_*` | REINFORCE and revised evaluation |
-| `notebooks/02_*` | Value-baseline comparison |
-| `notebooks/03_*` | A2C CartPole/LunarLander final study |
-| `exploratory/` | Historical A2C trials, separated from final notebooks |
-| `src/dla_lab3/` | Policy-gradient, A2C, evaluation, plotting, and environment modules |
-| `scripts/` | Environment and checkpoint utilities |
-| `config/lab3_defaults.yaml` | Environment, algorithm, selection, and experiment settings |
-| `results/` | Lightweight public metrics |
-| `figures/` | Figures extracted or regenerated from evidence |
+| `DLA_3.ipynb` | Indice del laboratorio leggibile su GitHub |
+| `notebooks/01_*` | REINFORCE e valutazione rivista |
+| `notebooks/02_*` | Confronto con value baseline |
+| `notebooks/03_*` | Studio finale A2C CartPole/LunarLander |
+| `exploratory/` | Prove A2C storiche, separate dai notebook finali |
+| `src/dla_lab3/` | Moduli policy-gradient, A2C, valutazione, plotting e ambiente |
+| `scripts/` | Utilità per ambiente e checkpoint |
+| `config/lab3_defaults.yaml` | Impostazioni di ambiente, algoritmo, selezione ed esperimenti |
+| `results/` | Metriche pubbliche leggere |
+| `figures/` | Figure estratte o rigenerate dalle evidenze |
 
-### Exploratory-notebook decision
+### Decisione sul notebook esplorativo
 
-| File | Unique content | Referenced by final report | Required for submission | Decision |
+| File | Contenuto unico | Citato dalla relazione finale | Necessario per la consegna | Decisione |
 | --- | ---: | ---: | ---: | --- |
-| `exploratory/00_esperimenti_di_prova_a2c.ipynb` | Yes: early separate-network and refinement trials | As historical context only | No | Retained outside `notebooks/`; not part of final execution order |
+| `exploratory/00_esperimenti_di_prova_a2c.ipynb` | Sì: prime prove con reti separate e raffinamenti | Solo come contesto storico | No | Conservato fuori da `notebooks/`; non fa parte dell'ordine finale di esecuzione |
 
-## Main dependencies
+## Dipendenze principali
 
-| Library | Purpose | Used in |
+| Libreria | Scopo | Utilizzata in |
 | --- | --- | --- |
-| PyTorch | Policy/value networks, autograd, optimizers | REINFORCE and A2C |
-| Gymnasium | Environments and vector interfaces | CartPole and LunarLander |
-| NumPy | Rollout arrays, statistics, seed handling | Training and evaluation |
-| Matplotlib | Training/evaluation plots | Executed notebooks |
-| Pygame | Optional human rendering | Visual episodes |
-| Box2D | LunarLander physics | A2C LunarLander |
-| PyYAML / local YAML loader | Experiment configuration | All notebooks |
+| PyTorch | Reti di policy/valore, autograd, ottimizzatori | REINFORCE e A2C |
+| Gymnasium | Ambienti e interfacce vettoriali | CartPole e LunarLander |
+| NumPy | Array dei rollout, statistiche, gestione dei seed | Training e valutazione |
+| Matplotlib | Grafici di training/valutazione | Notebook eseguiti |
+| Pygame | Rendering umano facoltativo | Episodi visuali |
+| Box2D | Fisica LunarLander | A2C LunarLander |
+| PyYAML / loader YAML locale | Configurazione degli esperimenti | Tutti i notebook |
 
-## Local modules and main functions
+## Moduli locali e funzioni principali
 
-| Function/class | Source file | Purpose | Inputs | Outputs | Used in |
+| Funzione/classe | File sorgente | Scopo | Input | Output | Utilizzata in |
 | --- | --- | --- | --- | --- | --- |
-| `PolicyNet` / `ValueNet` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | CartPole policy and state-value models | Observation tensor | Action probabilities / value | Exercises 1–2 |
-| `reinforce` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | Train episodic policy gradient with periodic evaluation | Policy, environment, config | History and checkpoint | Exercise 1 |
-| `reinforce_with_value_baseline` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | Joint policy/value training | Policy, value net, environment, config | History and checkpoint | Exercise 2 |
-| `ActorCritic` | [`a2c.py`](src/dla_lab3/a2c.py) | Shared actor-critic network | Observation tensor | Policy logits and value | Exercise 3 |
-| `train_a2c_vectorized` | [`a2c.py`](src/dla_lab3/a2c.py) | Train from parallel short rollouts | Environment factories, network, `A2CConfig` | History and checkpoints | Exercise 3 |
-| `evaluate_lunar_candidates` | [`experiments.py`](src/dla_lab3/experiments.py) | Compare available checkpoints under one protocol | Candidate list, config | Evaluation rows | LunarLander selection |
-| `evaluate_lunar_policy_configurations` | [`experiments.py`](src/dla_lab3/experiments.py) | Evaluate greedy/sample temperatures | Selected candidates, config | Policy-result table | LunarLander selection |
-| `final_lunar_evaluation` | [`experiments.py`](src/dla_lab3/experiments.py) | Run the fixed final 200-episode protocol | Checkpoint, mode, temperature, config | Aggregate metrics | Final evaluation |
-| `run_cartpole_visual_episodes` | [`visualization.py`](src/dla_lab3/visualization.py) | Render five reproducible CartPole rollouts | Checkpoint, action mode, seed base | Lightweight episode summary | Exercise 2 |
-| `run_lunar_visual_episodes` | [`visualization.py`](src/dla_lab3/visualization.py) | Render five reproducible LunarLander rollouts | Checkpoint and policy settings | Lightweight episode summary | Final notebook |
+| `PolicyNet` / `ValueNet` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | Modelli di policy e valore di stato per CartPole | Tensore di osservazione | Probabilità delle azioni / valore | Esercizi 1–2 |
+| `reinforce` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | Addestra il policy gradient episodico con valutazione periodica | Policy, ambiente, configurazione | Cronologia e checkpoint | Esercizio 1 |
+| `reinforce_with_value_baseline` | [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) | Addestra congiuntamente policy e valore | Policy, rete del valore, ambiente, configurazione | Cronologia e checkpoint | Esercizio 2 |
+| `ActorCritic` | [`a2c.py`](src/dla_lab3/a2c.py) | Rete actor-critic condivisa | Tensore di osservazione | Logit della policy e valore | Esercizio 3 |
+| `train_a2c_vectorized` | [`a2c.py`](src/dla_lab3/a2c.py) | Addestra da brevi rollout paralleli | Factory di ambienti, rete, `A2CConfig` | Cronologia e checkpoint | Esercizio 3 |
+| `evaluate_lunar_candidates` | [`experiments.py`](src/dla_lab3/experiments.py) | Confronta i checkpoint disponibili con un unico protocollo | Lista dei candidati, configurazione | Righe di valutazione | Selezione LunarLander |
+| `evaluate_lunar_policy_configurations` | [`experiments.py`](src/dla_lab3/experiments.py) | Valuta modalità greedy/sample e temperature | Candidati selezionati, configurazione | Tabella dei risultati delle policy | Selezione LunarLander |
+| `final_lunar_evaluation` | [`experiments.py`](src/dla_lab3/experiments.py) | Esegue il protocollo finale fisso su 200 episodi | Checkpoint, modalità, temperatura, configurazione | Metriche aggregate | Valutazione finale |
+| `run_cartpole_visual_episodes` | [`visualization.py`](src/dla_lab3/visualization.py) | Renderizza cinque rollout CartPole riproducibili | Checkpoint, modalità delle azioni, seed base | Riepilogo leggero degli episodi | Esercizio 2 |
+| `run_lunar_visual_episodes` | [`visualization.py`](src/dla_lab3/visualization.py) | Renderizza cinque rollout LunarLander riproducibili | Checkpoint e impostazioni della policy | Riepilogo leggero degli episodi | Notebook finale |
 
-## AI-assisted parameter discussion
+## Discussione degli iperparametri assistita dall'IA
 
-ChatGPT and OpenAI Codex supported conceptual review and comparison of A2C settings. The RL Baselines3 Zoo file was used as an external reference for `n_envs=8`, `gamma=0.995`, `n_steps=5`, learning rate `0.00083`, and entropy coefficient `0.00001`. These values were adapted to a local implementation and experiment budget; AI suggestions were not accepted automatically, and the final policy was selected from measured checkpoint/policy evaluations. Full disclosure is in [`../AI_USAGE.md`](../AI_USAGE.md).
+ChatGPT e OpenAI Codex hanno supportato la revisione concettuale e il confronto delle impostazioni A2C. Il file RL Baselines3 Zoo è stato usato come riferimento esterno per `n_envs=8`, `gamma=0.995`, `n_steps=5`, learning rate `0.00083` e coefficiente di entropia `0.00001`. Questi valori sono stati adattati all'implementazione locale e al budget sperimentale; i suggerimenti dell'IA non sono stati accettati automaticamente e la policy finale è stata scelta da valutazioni misurate dei checkpoint e delle configurazioni. La dichiarazione completa è in [`../AI_USAGE.md`](../AI_USAGE.md).
 
-## Sources
+## Fonti
 
-- [Gymnasium CartPole-v1 documentation](https://gymnasium.farama.org/environments/classic_control/cart_pole/)
-- [Gymnasium LunarLander-v3 documentation](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
-- [PyTorch distributions documentation](https://pytorch.org/docs/stable/distributions.html)
-- [Stable-Baselines3 A2C documentation](https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html)
-- [RL Baselines3 Zoo A2C hyperparameters](https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/a2c.yml)
-- [Sutton and Barto, Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html)
+- [Documentazione Gymnasium CartPole-v1](https://gymnasium.farama.org/environments/classic_control/cart_pole/)
+- [Documentazione Gymnasium LunarLander-v3](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
+- [Documentazione PyTorch distributions](https://pytorch.org/docs/stable/distributions.html)
+- [Documentazione Stable-Baselines3 A2C](https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html)
+- [Iperparametri A2C di RL Baselines3 Zoo](https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/a2c.yml)
+- [Sutton e Barto, Reinforcement Learning: An Introduction (MIT Press)](https://mitpress.mit.edu/9780262039246/reinforcement-learning/)
 
-## Conclusion
+## Conclusione
 
-The laboratory's strongest result is not a single return but a more defensible evaluation process. The value baseline made CartPole stable under a strict criterion, while LunarLander required checkpoint, action-mode, and temperature selection. The final LunarLander policy averaged `165.76 ± 100.56` with `56%` success over 200 episodes: useful performance with substantial remaining variability, reported without overstating that the environment is solved.
+Il risultato più importante del laboratorio non è un singolo return, ma un processo di valutazione più difendibile. La value baseline ha reso CartPole stabile secondo un criterio severo, mentre LunarLander ha richiesto selezione di checkpoint, modalità delle azioni e temperatura. La policy LunarLander finale ha ottenuto `165.76 ± 100.56` con successo nel `56%` dei 200 episodi: prestazioni utili ma ancora molto variabili, riportate senza affermare eccessivamente che l'ambiente sia risolto.

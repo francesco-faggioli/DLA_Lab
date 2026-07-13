@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600" role="img" aria-labelledby="title desc">
-<title id="title">LunarLander policy-temperature sweep</title>
+<title id="title">Sweep della temperatura della policy LunarLander</title>
 <desc id="desc">Figura generata da dati sperimentali versionati nella cartella results.</desc>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <style>text{font-family:Arial,sans-serif;fill:#182026;letter-spacing:0} .grid{stroke:#d8dee4;stroke-width:1} .axis{stroke:#59636e;stroke-width:1.2}</style>
-<text x="490.0" y="32" text-anchor="middle" font-size="20" font-weight="700">LunarLander policy-temperature sweep</text>
+<text x="490.0" y="32" text-anchor="middle" font-size="20" font-weight="700">Sweep della temperatura della policy LunarLander</text>
 <line class="grid" x1="82" y1="282.0" x2="938" y2="282.0"/>
 <text x="72" y="286.0" text-anchor="end" font-size="12">-70</text>
 <line class="grid" x1="82" y1="229.5" x2="938" y2="229.5"/>
@@ -41,7 +41,7 @@
 <circle cx="809.6" cy="150.2" r="4" fill="#176B87"/>
 <line x1="938.0" y1="72.0" x2="938.0" y2="218.8" stroke="#176B87" stroke-width="1.5"/>
 <circle cx="938.0" cy="139.4" r="4" fill="#176B87"/>
-<text x="18" y="177" text-anchor="middle" font-size="14" transform="rotate(-90 18 177)">Average return (mean +/- SD)</text>
+<text x="18" y="177" text-anchor="middle" font-size="14" transform="rotate(-90 18 177)">Return medio (media +/- DS)</text>
 <line class="grid" x1="82" y1="490.0" x2="938" y2="490.0"/>
 <text x="72" y="494.0" text-anchor="end" font-size="12">0</text>
 <line class="grid" x1="82" y1="452.5" x2="938" y2="452.5"/>
@@ -79,7 +79,7 @@
 <text x="681.2" y="512" text-anchor="middle" font-size="11">0.95</text>
 <text x="809.6" y="512" text-anchor="middle" font-size="11">1.10</text>
 <text x="938.0" y="512" text-anchor="middle" font-size="11">1.25</text>
-<text x="18" y="415" text-anchor="middle" font-size="14" transform="rotate(-90 18 415)">Success rate (%)</text>
-<text x="510.0" y="548" text-anchor="middle" font-size="14">Sampling temperature</text>
-<text x="490" y="578" text-anchor="middle" font-size="12">Selected checkpoint; 100 episodes per temperature; error bars show one standard deviation.</text>
+<text x="18" y="415" text-anchor="middle" font-size="14" transform="rotate(-90 18 415)">Percentuale di successo (%)</text>
+<text x="510.0" y="548" text-anchor="middle" font-size="14">Temperatura di campionamento</text>
+<text x="490" y="578" text-anchor="middle" font-size="12">Checkpoint selezionato; 100 episodi per temperatura; barre pari a una deviazione standard.</text>
 </svg>

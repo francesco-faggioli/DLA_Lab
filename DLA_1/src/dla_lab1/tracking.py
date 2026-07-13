@@ -11,19 +11,21 @@ import yaml
 from .paths import ensure_dir, resolve_path
 
 
-def experiment_output_dir(config: dict[str, Any], experiment_name: str, root: str | Path = ".") -> Path:
+def experiment_output_dir(
+    config: dict[str, Any], experiment_name: str, root: str | Path = "."
+) -> Path:
     """
     Serve a creare la cartella locale dedicata a una run.
 
-    Nel notebook dell'Exercise 2 la usiamo per salvare history, configurazione
+    Nel notebook dell'Esercizio 2 la usiamo per salvare cronologia, configurazione
     e summary senza dipendere obbligatoriamente da WandB.
 
-    Args:
+    Argomenti:
         config: Configurazione dell'esperimento.
         experiment_name: Nome della run.
         root: Cartella radice per risolvere `artifacts_dir`.
 
-    Returns:
+    Restituisce:
         Path della cartella artifact locale della run.
     """
     artifacts_dir = resolve_path(config["paths"]["artifacts_dir"], root)
@@ -37,10 +39,10 @@ def history_to_records(history) -> list[dict[str, Any]]:
     Accetta sia oggetti `EpochMetrics` sia dizionari, cosi' il salvataggio
     resta semplice anche se cambiamo leggermente il formato interno.
 
-    Args:
+    Argomenti:
         history: Lista di metriche per epoca.
 
-    Returns:
+    Restituisce:
         Lista di dizionari serializzabili.
     """
     records: list[dict[str, Any]] = []
@@ -61,10 +63,10 @@ def history_to_dataframe(history) -> pd.DataFrame:
     Il DataFrame e' comodo sia per visualizzare i risultati nel notebook sia
     per salvarli in CSV.
 
-    Args:
+    Argomenti:
         history: Lista di metriche per epoca.
 
-    Returns:
+    Restituisce:
         DataFrame Pandas con una riga per epoca.
     """
     return pd.DataFrame(history_to_records(history))
@@ -77,10 +79,10 @@ def summarize_history(history) -> dict[str, Any]:
     Estrae l'epoca migliore secondo `val_acc` e conserva anche l'ultima epoca
     disponibile, utile per capire se il modello stava ancora migliorando.
 
-    Args:
+    Argomenti:
         history: Lista di metriche prodotte dal training.
 
-    Returns:
+    Restituisce:
         Dizionario con migliori metriche di validation e metriche finali.
     """
     frame = history_to_dataframe(history)
@@ -107,11 +109,11 @@ def save_config_snapshot(config: dict[str, Any], output_dir: str | Path) -> Path
     Questo rende l'esperimento riproducibile: oltre alle metriche, conserviamo
     anche iperparametri, path e impostazioni hardware.
 
-    Args:
+    Argomenti:
         config: Configurazione effettiva della run.
         output_dir: Cartella in cui salvare il file YAML.
 
-    Returns:
+    Restituisce:
         Path del file `config_used.yaml`.
     """
     path = Path(output_dir) / "config_used.yaml"
@@ -126,11 +128,11 @@ def save_history_csv(history, output_dir: str | Path) -> Path:
     Il CSV permette di ricaricare e confrontare le run senza rieseguire
     il training.
 
-    Args:
+    Argomenti:
         history: Lista di metriche per epoca.
         output_dir: Cartella in cui salvare il CSV.
 
-    Returns:
+    Restituisce:
         Path del file `history.csv`.
     """
     path = Path(output_dir) / "history.csv"
@@ -145,11 +147,11 @@ def save_summary_json(summary: dict[str, Any], output_dir: str | Path) -> Path:
     Il file JSON contiene poche metriche chiave ed e' utile per costruire
     tabelle comparative tra esperimenti.
 
-    Args:
+    Argomenti:
         summary: Dizionario di metriche riassuntive.
         output_dir: Cartella in cui salvare il JSON.
 
-    Returns:
+    Restituisce:
         Path del file `summary.json`.
     """
     path = Path(output_dir) / "summary.json"
@@ -169,13 +171,13 @@ def save_run_artifacts(
     Restituisce percorsi e metriche riassuntive, cosi' il notebook puo'
     mostrarli in modo esplicito.
 
-    Args:
+    Argomenti:
         config: Configurazione usata dalla run.
         experiment_name: Nome dell'esperimento.
         history: Metriche per epoca.
         root: Cartella radice del progetto.
 
-    Returns:
+    Restituisce:
         Dizionario con path degli artifact locali e summary della run.
     """
     output_dir = experiment_output_dir(config, experiment_name, root=root)
@@ -196,10 +198,10 @@ def wandb_is_available() -> bool:
     Il notebook usa questa funzione per spiegare se il logging online puo'
     essere attivato senza installare altre librerie.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         True se il pacchetto `wandb` e' importabile, altrimenti False.
     """
     try:
@@ -216,10 +218,10 @@ def init_wandb_run(config: dict[str, Any]):
     Non contiene API key: l'utente deve aver gia' fatto `wandb login` oppure
     impostare la chiave tramite variabile d'ambiente.
 
-    Args:
+    Argomenti:
         config: Configurazione della run, inclusa la sezione `wandb`.
 
-    Returns:
+    Restituisce:
         Oggetto run WandB se abilitato, altrimenti None.
     """
     wandb_cfg = config.get("wandb", {})
@@ -254,11 +256,11 @@ def log_epoch_to_wandb(run, metrics: dict[str, Any]) -> None:
     Se `run` e' `None` non fa nulla, quindi il training resta identico anche
     quando WandB e' disattivato.
 
-    Args:
+    Argomenti:
         run: Oggetto run WandB oppure None.
         metrics: Dizionario di metriche da registrare.
 
-    Returns:
+    Restituisce:
         None.
     """
     if run is not None:
@@ -272,12 +274,12 @@ def log_checkpoint_to_wandb(run, checkpoint_path: str | Path, artifact_name: str
     Lo usiamo solo quando WandB e' attivo: oltre alle metriche per epoca,
     resta disponibile anche il file `.pt` del modello migliore.
 
-    Args:
+    Argomenti:
         run: Oggetto run WandB oppure None.
         checkpoint_path: File checkpoint da caricare come artifact.
         artifact_name: Nome dell'artifact su WandB.
 
-    Returns:
+    Restituisce:
         None.
     """
     if run is None:
@@ -300,10 +302,10 @@ def finish_wandb_run(run) -> None:
 
     E' separata dal training loop per mantenere opzionale il logging online.
 
-    Args:
+    Argomenti:
         run: Oggetto run WandB oppure None.
 
-    Returns:
+    Restituisce:
         None.
     """
     if run is not None:

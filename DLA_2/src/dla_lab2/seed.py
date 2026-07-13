@@ -10,10 +10,10 @@ def set_seed(seed: int = 42) -> None:
     """
     Imposta i seed principali per rendere gli esperimenti piu' riproducibili.
 
-    Args:
+    Argomenti:
         seed: Valore intero usato per Python, NumPy e PyTorch.
 
-    Returns:
+    Restituisce:
         None. La funzione modifica lo stato globale dei generatori casuali.
     """
     os.environ["PYTHONHASHSEED"] = str(seed)

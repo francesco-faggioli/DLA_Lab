@@ -9,38 +9,49 @@ def version(package: str) -> str:
     """
     Legge la versione installata di un pacchetto.
 
-    Args:
+    Argomenti:
         package: Nome del modulo da importare.
 
-    Returns:
-        Stringa con la versione, oppure `not installed`.
+    Restituisce:
+        Stringa con la versione, oppure `non installato`.
     """
     try:
         module = importlib.import_module(package)
     except ImportError:
-        return "not installed"
-    return getattr(module, "__version__", "unknown")
+        return "non installato"
+    return getattr(module, "__version__", "sconosciuta")
 
 
 def main() -> None:
     """
     Stampa un riepilogo dell'ambiente Python.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         None. Scrive il report su stdout.
     """
+    print(f"Interprete: {sys.executable}")
     print(f"Python: {sys.version.split()[0]}")
-    print(f"Platform: {platform.platform()}")
-    for package in ["torch", "transformers", "datasets", "sklearn", "peft", "open_clip"]:
+    print(f"Piattaforma: {platform.platform()}")
+    for package in [
+        "numpy",
+        "pandas",
+        "torch",
+        "transformers",
+        "datasets",
+        "sklearn",
+        "peft",
+        "open_clip",
+        "dla_lab2",
+    ]:
         print(f"{package}: {version(package)}")
 
     try:
         import torch
 
-        print(f"CUDA available: {torch.cuda.is_available()}")
+        print(f"CUDA disponibile: {torch.cuda.is_available()}")
         if torch.cuda.is_available():
             print(f"GPU: {torch.cuda.get_device_name(0)}")
     except ImportError:

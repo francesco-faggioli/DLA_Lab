@@ -10,39 +10,38 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-
 ActionMode = Literal["greedy", "sample"]
 
 
 @dataclass
 class A2CConfig:
-    """Training configuration for Advantage Actor-Critic experiments.
+    """Configurazione di training per gli esperimenti Advantage Actor-Critic.
 
-    Args:
-        gamma: Discount factor.
-        lr: Optimizer learning rate.
-        value_coef: Weight of the critic loss.
-        entropy_coef: Entropy bonus coefficient.
-        entropy_coef_min: Minimum entropy coefficient after linear decay.
-        num_episodes: Number of episodes for single-environment training.
-        max_episode_steps: Safety cap for each episode.
-        eval_every: Evaluate every N episodes or vectorized updates.
-        eval_episodes: Number of episodes used at each evaluation.
-        gae_lambda: Lambda used by Generalized Advantage Estimation.
-        normalize_advantage: If True, standardize advantages before the actor
-            update.
-        grad_clip: Maximum gradient norm.
-        solved_threshold: Average evaluation return used as solved criterion.
-        checkpoint_path: Optional path used to save the best evaluation model.
-        save_best: If True, checkpoint the best evaluation model.
-        stop_when_solved: If True, stop training after reaching the threshold.
+    Argomenti:
+        gamma: Fattore di sconto.
+        lr: Learning rate dell'ottimizzatore.
+        value_coef: Peso della loss del critic.
+        entropy_coef: Coefficiente del bonus di entropia.
+        entropy_coef_min: Coefficiente minimo di entropia dopo il decadimento lineare.
+        num_episodes: Numero di episodi per il training con un singolo ambiente.
+        max_episode_steps: Limite di sicurezza per ciascun episodio.
+        eval_every: Valuta ogni N episodi o aggiornamenti vettorizzati.
+        eval_episodes: Numero di episodi usati a ogni valutazione.
+        gae_lambda: Parametro lambda della Generalized Advantage Estimation.
+        normalize_advantage: Se True, standardizza gli advantage prima
+            dell'aggiornamento dell'actor.
+        grad_clip: Norma massima del gradiente.
+        solved_threshold: Return medio di valutazione usato come criterio di soluzione.
+        checkpoint_path: Percorso opzionale per salvare il miglior modello di valutazione.
+        save_best: Se True, salva il miglior modello di valutazione.
+        stop_when_solved: Se True, interrompe il training dopo il raggiungimento della soglia.
 
-    What it does:
-        Stores all hyperparameters needed to reproduce the A2C experiments in a
-        single explicit object.
+    Operazione:
+        Memorizza in un unico oggetto esplicito tutti gli iperparametri necessari
+        per riprodurre gli esperimenti A2C.
 
-    Outputs:
-        Dataclass instance passed to A2C training functions.
+    Output:
+        Istanza dataclass passata alle funzioni di training A2C.
     """
 
     gamma: float = 0.99
@@ -64,18 +63,18 @@ class A2CConfig:
 
 
 def layer_init(layer: nn.Linear, std: float = np.sqrt(2), bias_const: float = 0.0) -> nn.Linear:
-    """Initialize a linear layer with orthogonal weights.
+    """Inizializza un layer lineare con pesi ortogonali.
 
-    Args:
-        layer: Linear layer to initialize.
-        std: Gain used by orthogonal initialization.
-        bias_const: Constant value assigned to the bias.
+    Argomenti:
+        layer: Layer lineare da inizializzare.
+        std: Guadagno usato dall'inizializzazione ortogonale.
+        bias_const: Valore costante assegnato al bias.
 
-    What it does:
-        Applies a common initialization used in actor-critic implementations.
+    Operazione:
+        Applica un'inizializzazione comune nelle implementazioni actor-critic.
 
-    Outputs:
-        The same layer, initialized in place.
+    Output:
+        Lo stesso layer, inizializzato in-place.
     """
 
     torch.nn.init.orthogonal_(layer.weight, std)
@@ -84,23 +83,23 @@ def layer_init(layer: nn.Linear, std: float = np.sqrt(2), bias_const: float = 0.
 
 
 class A2CNet(nn.Module):
-    """Shared-trunk actor-critic network for discrete-action environments."""
+    """Rete actor-critic con trunk condiviso per ambienti ad azioni discrete."""
 
     def __init__(self, obs_dim: int, n_actions: int, hidden_size: int = 128):
-        """Create a shared actor-critic model.
+        """Crea un modello actor-critic con rappresentazione condivisa.
 
-        Args:
-            obs_dim: Number of observation features.
-            n_actions: Number of discrete actions.
-            hidden_size: Width of the hidden layers.
+        Argomenti:
+            obs_dim: Numero di feature dell'osservazione.
+            n_actions: Numero di azioni discrete.
+            hidden_size: Ampiezza dei layer nascosti.
 
-        What it does:
-            Builds a shared feature extractor and two heads: one for policy
-            logits and one for the state-value estimate.
+        Operazione:
+            Costruisce un estrattore condiviso e due teste: una per i logit
+            della policy e una per la stima del valore di stato.
 
-        Outputs:
-            A PyTorch module. `get_logits_and_value` returns policy logits and
-            critic values.
+        Output:
+            Modulo PyTorch; `get_logits_and_value` restituisce logit della policy e
+            valori del critic.
         """
 
         super().__init__()
@@ -114,14 +113,16 @@ class A2CNet(nn.Module):
         self.critic_head = nn.Linear(hidden_size, 1)
 
     def get_logits_and_value(self, states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return policy logits and state values for one state or a batch."""
+        """Restituisce logit della policy e valori di stato per uno stato o un batch."""
 
         features = self.trunk(states)
         logits = self.actor_head(features)
         values = self.critic_head(features).squeeze(-1)
         return logits, values
 
-    def forward(self, states: torch.Tensor, temperature: float = 1.0) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, states: torch.Tensor, temperature: float = 1.0
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         logits, values = self.get_logits_and_value(states)
         return F.softmax(logits / temperature, dim=-1), values
 
@@ -131,23 +132,23 @@ class A2CNet(nn.Module):
 
 
 class A2CNetLunarSeparate(nn.Module):
-    """Separate actor and critic networks for LunarLander."""
+    """Reti actor e critic separate per LunarLander."""
 
     def __init__(self, obs_dim: int, n_actions: int, hidden_size: int = 64):
-        """Create a LunarLander actor-critic model.
+        """Crea il modello actor-critic per LunarLander.
 
-        Args:
-            obs_dim: Number of LunarLander observation features.
-            n_actions: Number of discrete LunarLander actions.
-            hidden_size: Width of the actor and critic hidden layers.
+        Argomenti:
+            obs_dim: Numero di feature dell'osservazione LunarLander.
+            n_actions: Numero di azioni discrete LunarLander.
+            hidden_size: Ampiezza dei layer nascosti di actor e critic.
 
-        What it does:
-            Uses two independent MLPs. This reduced interference between actor
-            and critic in the old exploratory runs.
+        Operazione:
+            Usa due MLP indipendenti, scelta che nelle prove esplorative ha ridotto
+            l'interferenza tra actor e critic.
 
-        Outputs:
-            A PyTorch module compatible with the A2C evaluation and training
-            utilities in this file.
+        Output:
+            Modulo PyTorch compatibile con le funzioni A2C di valutazione e training
+            definite in questo file.
         """
 
         super().__init__()
@@ -167,13 +168,15 @@ class A2CNetLunarSeparate(nn.Module):
         )
 
     def get_logits_and_value(self, states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return policy logits and state values for one state or a batch."""
+        """Restituisce logit della policy e valori di stato per uno stato o un batch."""
 
         logits = self.actor(states)
         values = self.critic(states).squeeze(-1)
         return logits, values
 
-    def forward(self, states: torch.Tensor, temperature: float = 1.0) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, states: torch.Tensor, temperature: float = 1.0
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         logits, values = self.get_logits_and_value(states)
         return F.softmax(logits / temperature, dim=-1), values
 
@@ -182,35 +185,35 @@ class A2CNetLunarSeparate(nn.Module):
 
 
 def a2c_from_env(env, hidden_size: int = 128) -> A2CNet:
-    """Build a shared A2C network from a Gymnasium environment.
+    """Costruisce una rete A2C condivisa da un ambiente Gymnasium.
 
-    Args:
-        env: Environment with continuous observations and a discrete action
+    Argomenti:
+        env: Ambiente con osservazioni continue e spazio delle azioni
             space.
-        hidden_size: Width of the hidden layers.
+        hidden_size: Ampiezza dei layer nascosti.
 
-    What it does:
-        Reads observation and action dimensions from the environment.
+    Operazione:
+        Legge dall'ambiente le dimensioni di osservazioni e azioni.
 
-    Outputs:
-        `A2CNet` instance.
+    Output:
+        Istanza di `A2CNet`.
     """
 
     return A2CNet(env.observation_space.shape[0], env.action_space.n, hidden_size)
 
 
 def lunar_a2c_from_env(env, hidden_size: int = 64) -> A2CNetLunarSeparate:
-    """Build the separate actor-critic network used for LunarLander.
+    """Costruisce la rete actor-critic separata usata per LunarLander.
 
-    Args:
-        env: LunarLander environment.
-        hidden_size: Width of the actor and critic hidden layers.
+    Argomenti:
+        env: Ambiente LunarLander.
+        hidden_size: Ampiezza dei layer nascosti di actor e critic.
 
-    What it does:
-        Reads observation and action dimensions from the environment.
+    Operazione:
+        Legge dall'ambiente le dimensioni di osservazioni e azioni.
 
-    Outputs:
-        `A2CNetLunarSeparate` instance.
+    Output:
+        Istanza di `A2CNetLunarSeparate`.
     """
 
     return A2CNetLunarSeparate(env.observation_space.shape[0], env.action_space.n, hidden_size)
@@ -228,21 +231,21 @@ def compute_gae(
     gamma: float,
     gae_lambda: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Compute Generalized Advantage Estimation targets.
+    """Calcola i target della Generalized Advantage Estimation.
 
-    Args:
-        rewards: Reward tensor with shape `[T]` or `[T, n_envs]`.
-        values: Critic values with the same leading shape as rewards.
-        next_value: Bootstrap value after the rollout.
-        masks: Continuation mask. Use 0 when the next state is terminal.
-        gamma: Discount factor.
-        gae_lambda: GAE trace parameter.
+    Argomenti:
+        rewards: Tensore dei reward con forma `[T]` oppure `[T, n_envs]`.
+        values: Valori del critic con la stessa forma iniziale dei reward.
+        next_value: Valore di bootstrap dopo il rollout.
+        masks: Maschera di continuazione; usa 0 quando lo stato successivo è terminale.
+        gamma: Fattore di sconto.
+        gae_lambda: Parametro di traccia GAE.
 
-    What it does:
-        Computes low-variance advantage estimates and matching critic targets.
+    Operazione:
+        Calcola stime dell'advantage a varianza ridotta e i target corrispondenti.
 
-    Outputs:
-        Tuple `(advantages, returns)`.
+    Output:
+        Tupla `(advantages, returns)`.
     """
 
     advantages = torch.zeros_like(rewards)
@@ -267,27 +270,27 @@ def run_a2c_episode(
     max_episode_steps: int = 1000,
     seed: int | None = None,
 ) -> dict:
-    """Run one A2C policy episode.
+    """Esegue un episodio con una policy A2C.
 
-    Args:
-        env: Gymnasium environment.
-        net: Actor-critic network.
-        obs_scale: Observation normalization tensor.
-        mode: `sample` for stochastic actions or `greedy` for argmax actions.
-        temperature: Softmax temperature used only in stochastic mode.
-        max_episode_steps: Safety cap for the rollout.
-        seed: Optional reset seed.
+    Argomenti:
+        env: Ambiente Gymnasium.
+        net: Rete actor-critic.
+        obs_scale: Tensore di normalizzazione delle osservazioni.
+        mode: `sample` per azioni stocastiche o `greedy` per l'argmax.
+        temperature: Temperatura softmax usata soltanto in modalità stocastica.
+        max_episode_steps: Limite di sicurezza del rollout.
+        seed: Seed opzionale per il reset.
 
-    What it does:
-        Executes a trained or partially trained actor-critic policy in the
-        environment and records episode statistics.
+    Operazione:
+        Esegue nell'ambiente una policy actor-critic addestrata o parzialmente
+        addestrata e registra le statistiche dell'episodio.
 
-    Outputs:
-        Dictionary with return, length, selected actions and termination flags.
+    Output:
+        Dizionario con return, lunghezza, azioni selezionate e flag terminali.
     """
 
     if mode not in {"sample", "greedy"}:
-        raise ValueError("mode must be 'sample' or 'greedy'")
+        raise ValueError("mode deve essere 'sample' oppure 'greedy'")
 
     obs, _ = env.reset(seed=seed)
     total_reward = 0.0
@@ -336,25 +339,25 @@ def evaluate_a2c_policy(
     seed_start: int = 10_000,
     max_episode_steps: int = 1000,
 ) -> dict:
-    """Evaluate an A2C policy over multiple episodes.
+    """Valuta una policy A2C su più episodi.
 
-    Args:
-        env: Gymnasium evaluation environment.
-        net: Actor-critic policy to evaluate.
-        obs_scale: Observation normalization tensor.
-        n_eval: Number of evaluation episodes.
-        mode: `greedy` or `sample`.
-        temperature: Stochastic policy temperature.
-        seed_start: First seed used for deterministic evaluation episodes.
-        max_episode_steps: Safety cap for each episode.
+    Argomenti:
+        env: Ambiente Gymnasium di valutazione.
+        net: Policy actor-critic da valutare.
+        obs_scale: Tensore di normalizzazione delle osservazioni.
+        n_eval: Numero di episodi di valutazione.
+        mode: `greedy` oppure `sample`.
+        temperature: Temperatura della policy stocastica.
+        seed_start: Primo seed degli episodi di valutazione deterministici.
+        max_episode_steps: Limite di sicurezza per ciascun episodio.
 
-    What it does:
-        Runs independent evaluation episodes and aggregates the performance
-        metrics requested by the laboratory.
+    Operazione:
+        Esegue episodi di valutazione indipendenti e aggrega le metriche
+        di prestazione richieste dal laboratorio.
 
-    Outputs:
-        Dictionary with average return, average length, dispersion metrics,
-        success rate, termination counts and action frequencies.
+    Output:
+        Dizionario con return medio, lunghezza media e metriche di dispersione,
+        percentuale di successo, conteggi terminali e frequenze delle azioni.
     """
 
     episodes = [
@@ -380,9 +383,7 @@ def evaluate_a2c_policy(
         counts = np.bincount(actions, minlength=n_actions)
         action_freq = counts / counts.sum()
         last_quarter_actions = [
-            action
-            for ep in episodes
-            for action in ep["actions"][int(0.75 * len(ep["actions"])) :]
+            action for ep in episodes for action in ep["actions"][int(0.75 * len(ep["actions"])) :]
         ]
         if last_quarter_actions:
             last_counts = np.bincount(last_quarter_actions, minlength=n_actions)
@@ -400,8 +401,12 @@ def evaluate_a2c_policy(
             "final_abs_angular_velocity": float(np.abs(final_observations[:, 5]).mean()),
         }
         if final_observations.shape[1] >= 8:
-            final_diagnostics["final_left_leg_contact_rate"] = float(final_observations[:, 6].mean() * 100.0)
-            final_diagnostics["final_right_leg_contact_rate"] = float(final_observations[:, 7].mean() * 100.0)
+            final_diagnostics["final_left_leg_contact_rate"] = float(
+                final_observations[:, 6].mean() * 100.0
+            )
+            final_diagnostics["final_right_leg_contact_rate"] = float(
+                final_observations[:, 7].mean() * 100.0
+            )
 
     result = {
         "returns": returns.tolist(),
@@ -415,7 +420,9 @@ def evaluate_a2c_policy(
         "terminated": int(sum(ep["terminated"] for ep in episodes)),
         "truncated": int(sum(ep["truncated"] for ep in episodes)),
         "action_freq": None if action_freq is None else action_freq.tolist(),
-        "last_quarter_action_freq": None if last_quarter_action_freq is None else last_quarter_action_freq.tolist(),
+        "last_quarter_action_freq": (
+            None if last_quarter_action_freq is None else last_quarter_action_freq.tolist()
+        ),
     }
     result.update(final_diagnostics)
     return result
@@ -428,22 +435,22 @@ def train_a2c_single_env(
     obs_scale: torch.Tensor,
     config: A2CConfig,
 ) -> dict:
-    """Train A2C on a single environment.
+    """Addestra A2C su un singolo ambiente.
 
-    Args:
-        net: Actor-critic network.
-        train_env: Environment used for stochastic training rollouts.
-        eval_env: Environment used for greedy evaluation.
-        obs_scale: Observation normalization tensor.
-        config: A2CConfig with hyperparameters and checkpoint settings.
+    Argomenti:
+        net: Rete actor-critic.
+        train_env: Ambiente usato per i rollout stocastici di training.
+        eval_env: Ambiente usato per la valutazione greedy.
+        obs_scale: Tensore di normalizzazione delle osservazioni.
+        config: `A2CConfig` con iperparametri e impostazioni dei checkpoint.
 
-    What it does:
-        Collects one full episode at a time, estimates advantages with GAE,
-        updates actor and critic jointly, and periodically evaluates the policy.
+    Operazione:
+        Raccoglie un episodio completo, stima gli advantage con GAE,
+        aggiorna congiuntamente actor e critic e valuta periodicamente la policy.
 
-    Outputs:
-        History dictionary with training returns, losses, evaluation metrics and
-        the best checkpoint path.
+    Output:
+        Dizionario storico con return di training, loss, metriche di valutazione e
+        percorso del checkpoint migliore.
     """
 
     optimizer = torch.optim.Adam(net.parameters(), lr=config.lr)
@@ -609,41 +616,41 @@ def train_a2c_vectorized(
     optimizer_name: Literal["adam", "rmsprop"] = "adam",
     stop_when_solved: bool = False,
 ) -> dict:
-    """Train A2C with parallel rollout environments.
+    """Addestra A2C con ambienti di rollout paralleli.
 
-    Args:
-        net: Actor-critic network.
-        vec_env: Gymnasium vector environment used for rollout collection.
-        eval_env: Single environment used for periodic evaluation.
-        obs_scale: Observation normalization tensor.
-        total_timesteps: Total environment steps budget.
-        n_steps: Rollout length per environment before each update.
-        gamma: Discount factor.
-        lr: Optimizer learning rate.
-        lr_final: Final learning rate for the linear schedule. If None, the
-            schedule keeps the previous 10% floor for backward compatibility.
-        value_coef: Weight of the critic loss.
-        entropy_coef: Initial entropy bonus coefficient.
-        entropy_coef_min: Minimum entropy coefficient after decay.
-        gae_lambda: GAE trace parameter.
-        reward_scale: Divisor applied to rewards before optimization.
-        normalize_advantage: If True, standardize rollout advantages.
-        grad_clip: Maximum gradient norm.
-        eval_every: Evaluate every N updates.
-        eval_episodes: Number of episodes per evaluation.
-        solved_threshold: Average return considered solved.
-        checkpoint_path: Optional best-evaluation checkpoint path.
-        optimizer_name: Optimizer used for the update. The old LunarLander
-            experiments used `rmsprop` for the best separate actor-critic runs.
-        stop_when_solved: If True, stop after reaching the threshold.
+    Argomenti:
+        net: Rete actor-critic.
+        vec_env: Ambiente vettoriale Gymnasium usato per raccogliere i rollout.
+        eval_env: Singolo ambiente usato per la valutazione periodica.
+        obs_scale: Tensore di normalizzazione delle osservazioni.
+        total_timesteps: Budget totale di step dell'ambiente.
+        n_steps: Lunghezza del rollout per ambiente prima di ogni aggiornamento.
+        gamma: Fattore di sconto.
+        lr: Learning rate dell'ottimizzatore.
+        lr_final: Learning rate finale dello scheduler lineare. Se None,
+            lo scheduler mantiene il precedente limite minimo del 10% per compatibilità.
+        value_coef: Peso della loss del critic.
+        entropy_coef: Coefficiente iniziale del bonus di entropia.
+        entropy_coef_min: Coefficiente minimo di entropia dopo il decadimento.
+        gae_lambda: Parametro di traccia GAE.
+        reward_scale: Divisore applicato ai reward prima dell'ottimizzazione.
+        normalize_advantage: Se True, standardizza gli advantage del rollout.
+        grad_clip: Norma massima del gradiente.
+        eval_every: Valuta ogni N aggiornamenti.
+        eval_episodes: Numero di episodi per valutazione.
+        solved_threshold: Return medio considerato risolutivo.
+        checkpoint_path: Percorso opzionale del miglior checkpoint di valutazione.
+        optimizer_name: Ottimizzatore dell'aggiornamento. Le migliori prove LunarLander
+            con actor e critic separati usavano `rmsprop`.
+        stop_when_solved: Se True, si arresta dopo aver raggiunto la soglia.
 
-    What it does:
-        Implements the practical A2C version used for LunarLander: vectorized
-        rollouts, GAE, reward scaling, entropy decay and gradient clipping.
+    Operazione:
+        Implementa la variante A2C pratica usata per LunarLander: rollout
+        vettorizzati, GAE, scaling dei reward, decadimento dell'entropia e gradient clipping.
 
-    Outputs:
-        History dictionary with completed training returns, losses, evaluation
-        metrics and checkpoint paths.
+    Output:
+        Dizionario storico con return completati, loss, metriche di valutazione
+        e percorsi dei checkpoint.
     """
 
     n_envs = vec_env.num_envs
@@ -655,7 +662,7 @@ def train_a2c_vectorized(
     elif optimizer_name == "rmsprop":
         optimizer = torch.optim.RMSprop(net.parameters(), lr=lr, eps=1e-5, alpha=0.99)
     else:
-        raise ValueError("optimizer_name must be 'adam' or 'rmsprop'")
+        raise ValueError("optimizer_name deve essere 'adam' oppure 'rmsprop'")
 
     completed_returns: list[float] = []
     completed_lengths: list[int] = []
@@ -671,8 +678,12 @@ def train_a2c_vectorized(
     if checkpoint_path is not None:
         checkpoint = Path(checkpoint_path)
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        train_checkpoint_path = str(checkpoint.with_name(checkpoint.stem + "_best_train" + checkpoint.suffix))
-        last_checkpoint_path = str(checkpoint.with_name(checkpoint.stem + "_last" + checkpoint.suffix))
+        train_checkpoint_path = str(
+            checkpoint.with_name(checkpoint.stem + "_best_train" + checkpoint.suffix)
+        )
+        last_checkpoint_path = str(
+            checkpoint.with_name(checkpoint.stem + "_last" + checkpoint.suffix)
+        )
 
     history = {
         "completed_returns": completed_returns,
@@ -766,7 +777,9 @@ def train_a2c_vectorized(
         entropies_flat = entropies_tensor.reshape(-1)
 
         if normalize_advantage and len(advantages_flat) > 1:
-            advantages_flat = (advantages_flat - advantages_flat.mean()) / (advantages_flat.std() + 1e-8)
+            advantages_flat = (advantages_flat - advantages_flat.mean()) / (
+                advantages_flat.std() + 1e-8
+            )
 
         actor_loss = -(log_probs_flat * advantages_flat.detach()).mean()
         entropy_bonus = entropies_flat.mean()
@@ -826,19 +839,19 @@ def train_a2c_vectorized(
 
 
 def load_a2c_checkpoint(net: nn.Module, checkpoint_path: str | Path) -> nn.Module:
-    """Load an A2C checkpoint into a network.
+    """Carica un checkpoint A2C in una rete.
 
-    Args:
-        net: Network with the same architecture used by the checkpoint.
-        checkpoint_path: Path to a checkpoint saved either as a raw state dict
-            or as a dictionary containing `model_state_dict`.
+    Argomenti:
+        net: Rete con la stessa architettura del checkpoint.
+        checkpoint_path: Percorso di un checkpoint salvato come state dict grezzo
+            oppure come dizionario contenente `model_state_dict`.
 
-    What it does:
-        Supports both the old exploratory checkpoints and the clean checkpoint
-        format used in this project.
+    Operazione:
+        Supporta sia i checkpoint esplorativi storici sia il formato pulito
+        usato nel progetto.
 
-    Outputs:
-        The input network loaded with checkpoint weights and set to eval mode.
+    Output:
+        La rete in input caricata con i pesi e impostata in modalità eval.
     """
 
     payload = torch.load(checkpoint_path, map_location="cpu")

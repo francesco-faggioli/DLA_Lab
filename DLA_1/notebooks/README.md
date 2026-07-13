@@ -1,13 +1,13 @@
-# DLA 1 notebook order
+# Ordine dei notebook DLA 1
 
-Run or inspect the final notebooks in this order:
+Eseguire o consultare i notebook finali nel seguente ordine:
 
-1. `01_eda_and_feature_baseline.ipynb` — GTSRB EDA and ResNet-18 feature/SVM baseline.
-2. `02_finetuning_pipeline.ipynb` — head-only fine-tuning baseline.
-3. `02b_pipeline_consolidation.ipynb` — modular pipeline, configuration, artifacts, and optional W&B.
-4. `03_improvements_and_retrieval.ipynb` — selective fine-tuning and improvement study.
-5. `03b_retrieval_training_free_classification.ipynb` — cosine retrieval, Precision@K, mAP, and NMC.
+1. `01_eda_and_feature_baseline.ipynb` — EDA GTSRB e baseline con feature ResNet-18/SVM.
+2. `02_finetuning_pipeline.ipynb` — baseline di fine-tuning head-only.
+3. `02b_pipeline_consolidation.ipynb` — pipeline modulare, configurazione, artefatti e W&B facoltativo.
+4. `03_improvements_and_retrieval.ipynb` — fine-tuning selettivo e studio dei miglioramenti.
+5. `03b_retrieval_training_free_classification.ipynb` — cosine retrieval, Precision@K, mAP e NMC.
 
-The final report is [`../README.md`](../README.md). Lightweight evidence is under [`../results/`](../results/). Long training and feature extraction require explicit `RUN_* = True` flags; W&B is disabled unless `ENABLE_WANDB = True` is set after a manual login.
+La relazione finale è in [`../README.md`](../README.md). Le evidenze leggere si trovano in [`../results/`](../results/). Training lunghi ed estrazione delle feature richiedono flag espliciti `RUN_* = True`; W&B resta disattivato a meno di impostare `ENABLE_WANDB = True` dopo un login manuale.
 
-The historical trial notebook was moved to `../exploratory/Esperimenti_di_prova.ipynb`. It is retained for provenance but is not part of this execution order and is not a source for headline metrics.
+Il notebook storico di prova è stato spostato in `../exploratory/Esperimenti_di_prova.ipynb`. Viene conservato per documentare la provenienza, ma non appartiene a questo ordine di esecuzione e non è fonte delle metriche principali.

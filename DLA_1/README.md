@@ -1,240 +1,240 @@
-# DLA 1 — Transfer Learning and Retrieval on GTSRB
+# DLA 1 — Transfer Learning e Retrieval su GTSRB
 
-## Overview
+## Panoramica
 
-This laboratory studies traffic-sign recognition through two complementary uses of pretrained convolutional networks. The first is supervised classification: fixed ImageNet features with a linear SVM are compared with progressively less constrained ResNet-18 fine-tuning. The second is training-free classification: pretrained embeddings are used for nearest-neighbour retrieval and a Nearest-Mean Classifier (NMC).
+Questo laboratorio studia il riconoscimento dei segnali stradali tramite due usi complementari di reti convoluzionali pre-addestrate. Il primo è la classificazione supervisionata: le feature ImageNet fisse con una SVM lineare sono confrontate con un fine-tuning di ResNet-18 progressivamente meno vincolato. Il secondo è la classificazione senza training: gli embedding pre-addestrati sono usati per il nearest-neighbour retrieval e per un Nearest-Mean Classifier (NMC).
 
-The report is based on preserved notebook outputs and lightweight evidence under [`results/`](results/). It does not rerun training or replace unsuccessful experiments with hypothetical results.
+La relazione si basa sugli output preservati nei notebook e sulle evidenze leggere in [`results/`](results/). Non ripete il training e non sostituisce gli esperimenti non riusciti con risultati ipotetici.
 
-**Final index:** [`DLA_1.ipynb`](DLA_1.ipynb)
+**Indice finale:** [`DLA_1.ipynb`](DLA_1.ipynb)
 
-**Official assignment:** [`ASSIGNMENT.md`](ASSIGNMENT.md)
+**Consegna ufficiale:** [`ASSIGNMENT.md`](ASSIGNMENT.md)
 
-**Notebook guide:** [`notebooks/README.md`](notebooks/README.md)
+**Guida ai notebook:** [`notebooks/README.md`](notebooks/README.md)
 
-## Objectives and assignment coverage
+## Obiettivi e copertura della consegna
 
-| Requirement | Implementation | Evidence | Status |
+| Requisito | Implementazione | Evidenza | Stato |
 | --- | --- | --- | ---: |
-| Exercise 1.1: GTSRB EDA | Dataset inspection, geometry, class distribution, examples | [`01_eda_and_feature_baseline.ipynb`](notebooks/01_eda_and_feature_baseline.ipynb) | Completed |
-| Exercise 1.2: stable baseline | Pretrained ResNet-18 feature extraction + linear SVM | Same notebook, test accuracy `0.6412` | Completed |
-| Exercise 1.3: fine-tuning baseline | Frozen backbone, new 43-class head, stratified validation | [`02_finetuning_pipeline.ipynb`](notebooks/02_finetuning_pipeline.ipynb) | Completed |
-| Exercise 2: pipeline consolidation | YAML configuration, reusable modules, artifacts, optional W&B | [`02b_pipeline_consolidation.ipynb`](notebooks/02b_pipeline_consolidation.ipynb) | Completed |
-| Exercise 3.1: improved fine-tuning | Layer 4 unfreezing, augmentation and regularization study | [`03_improvements_and_retrieval.ipynb`](notebooks/03_improvements_and_retrieval.ipynb) | Completed |
-| Exercise 3.2: retrieval and NMC | Similarity comparison, Precision@K, mAP and class centroids | [`03b_retrieval_training_free_classification.ipynb`](notebooks/03b_retrieval_training_free_classification.ipynb) | Completed |
+| Esercizio 1.1: EDA GTSRB | Ispezione del dataset, geometria, distribuzione delle classi, esempi | [`01_eda_and_feature_baseline.ipynb`](notebooks/01_eda_and_feature_baseline.ipynb) | Completato |
+| Esercizio 1.2: baseline stabile | Estrazione di feature ResNet-18 pre-addestrate + SVM lineare | Stesso notebook, accuracy di test `0.6412` | Completato |
+| Esercizio 1.3: baseline di fine-tuning | Backbone congelato, nuova testa a 43 classi, validazione stratificata | [`02_finetuning_pipeline.ipynb`](notebooks/02_finetuning_pipeline.ipynb) | Completato |
+| Esercizio 2: consolidamento della pipeline | Configurazione YAML, moduli riutilizzabili, artefatti, W&B facoltativo | [`02b_pipeline_consolidation.ipynb`](notebooks/02b_pipeline_consolidation.ipynb) | Completato |
+| Esercizio 3.1: fine-tuning migliorato | Sblocco di `layer4`, studio di augmentation e regolarizzazione | [`03_improvements_and_retrieval.ipynb`](notebooks/03_improvements_and_retrieval.ipynb) | Completato |
+| Esercizio 3.2: retrieval e NMC | Confronto delle similarità, Precision@K, mAP e centroidi di classe | [`03b_retrieval_training_free_classification.ipynb`](notebooks/03b_retrieval_training_free_classification.ipynb) | Completato |
 
-## Theoretical background
+## Fondamenti teorici
 
-A pretrained CNN can be used either as a fixed map \(f(x)\) or adapted to the target task. The stable baseline trains a linear SVM on the penultimate ResNet representation. This isolates the quality of the pretrained representation from neural-network optimization. Fine-tuning instead minimizes cross-entropy on GTSRB and can adapt higher-level features, but it is more sensitive to the learning rate, trainable layers, class imbalance, augmentation, and checkpoint selection.
+Una CNN pre-addestrata può essere usata come mappa fissa \(f(x)\) oppure adattata al compito di destinazione. La baseline stabile addestra una SVM lineare sulla rappresentazione penultima di ResNet. In questo modo la qualità della rappresentazione pre-addestrata è separata dall'ottimizzazione della rete neurale. Il fine-tuning minimizza invece la cross-entropy su GTSRB e può adattare le feature di alto livello, ma è più sensibile a learning rate, layer addestrabili, sbilanciamento delle classi, augmentation e selezione del checkpoint.
 
-For retrieval, query and gallery features are compared using cosine similarity, Euclidean distance, or a dot product. Precision@K measures the fraction of the first K retrieved images that share the query label. Average Precision summarizes the full ranking. NMC replaces individual gallery examples with one centroid per class and predicts the nearest centroid.
+Per il retrieval, le feature della query e della gallery sono confrontate tramite cosine similarity, distanza euclidea o dot product. Precision@K misura la frazione delle prime K immagini recuperate che condividono l'etichetta della query. Average Precision riassume l'intero ranking. NMC sostituisce gli esempi individuali della gallery con un centroide per classe e predice il centroide più vicino.
 
-## Dataset and exploratory analysis
+## Dataset e analisi esplorativa
 
-The executed Torchvision dataset contained `26,640` training images and `12,630` test images across `43` classes. These are the sizes observed by the submitted code and are therefore the values used in this report. The training-class counts ranged from `150` to `1,500`, a 10:1 ratio. Width ranged from `25` to `243` pixels and height from `25` to `225`; both means were approximately `50` pixels. Full values and provenance are in [`dataset_summary.json`](results/dataset_summary.json).
+Il dataset Torchvision eseguito conteneva `26,640` immagini di training e `12,630` di test, distribuite in `43` classi. Queste sono le dimensioni osservate dal codice consegnato e quindi usate nella relazione. Le numerosità delle classi di training variavano da `150` a `1,500`, con rapporto 10:1. La larghezza variava da `25` a `243` pixel e l'altezza da `25` a `225`; entrambe le medie erano di circa `50` pixel. Valori completi e provenienza sono in [`dataset_summary.json`](results/dataset_summary.json).
 
-### Raw examples
+### Esempi grezzi
 
-![GTSRB examples](figures/gtsrb_examples.png)
+![Esempi GTSRB](figures/gtsrb_examples.png)
 
-The samples confirm substantial variability in scale, illumination, framing, and sign appearance. This supports resizing all samples to a fixed tensor shape and using augmentation conservatively: transformations that change sign geometry or colour semantics can damage the label.
+I campioni confermano una notevole variabilità di scala, illuminazione, inquadratura e aspetto del segnale. Ciò giustifica il ridimensionamento a una forma tensoriale fissa e l'uso prudente dell'augmentation: trasformazioni che cambiano la geometria o la semantica dei colori del segnale possono compromettere l'etichetta.
 
-### Image geometry
+### Geometria delle immagini
 
-![GTSRB image geometry](figures/gtsrb_image_geometry.png)
+![Geometria delle immagini GTSRB](figures/gtsrb_image_geometry.png)
 
-The native image dimensions and aspect ratios are heterogeneous. The pipeline resizes images to `64 × 64`, which makes batching possible but introduces a geometric approximation. This is a practical compromise for the available GPU rather than a claim that native resolution is irrelevant.
+Dimensioni native e rapporti d'aspetto sono eterogenei. La pipeline ridimensiona le immagini a `64 × 64`, rendendo possibile il batching ma introducendo un'approssimazione geometrica. È un compromesso pratico per la GPU disponibile, non l'affermazione che la risoluzione nativa sia irrilevante.
 
-### Class imbalance
+### Sbilanciamento delle classi
 
-![GTSRB class distribution](figures/gtsrb_class_distribution.png)
+![Distribuzione delle classi GTSRB](figures/gtsrb_class_distribution.png)
 
-The imbalance means aggregate accuracy can hide weak minority-class recall. Stratification preserves every class in train and validation; the baseline split contained `20,820` train and `5,820` validation samples, with no missing class. Weighted cross-entropy and focal loss were included in the experiment registry, although the best final result came from selective fine-tuning with label smoothing rather than from reporting a weighted-loss run as the winner.
+Lo sbilanciamento implica che l'accuracy aggregata possa nascondere una recall debole sulle classi minoritarie. La stratificazione conserva tutte le classi in training e validazione; lo split della baseline conteneva `20,820` campioni di training e `5,820` di validazione, senza classi mancanti. Cross-entropy pesata e focal loss sono state incluse nel registro degli esperimenti, anche se il miglior risultato finale è derivato dal fine-tuning selettivo con label smoothing e non da una run con loss pesata.
 
-## Preprocessing and stable baseline
+## Preprocessing e baseline stabile
 
-Images are resized to `64 × 64`, converted to tensors, and normalized using the pretrained backbone convention. A ResNet-18 with default ImageNet weights is converted to a feature extractor by removing its final classifier. The resulting fixed embeddings feed a linear `sklearn.svm.SVC` with `C=1.0`.
+Le immagini sono ridimensionate a `64 × 64`, convertite in tensori e normalizzate secondo la convenzione del backbone pre-addestrato. Una ResNet-18 con pesi ImageNet predefiniti viene convertita in estrattore di feature rimuovendo il classificatore finale. Gli embedding fissi risultanti alimentano una `sklearn.svm.SVC` lineare con `C=1.0`.
 
-| Parameter | Value | Verified in |
+| Parametro | Valore | Verificato in |
 | --- | ---: | --- |
-| Backbone | ResNet-18, default pretrained weights | `config/config.yaml` |
-| Input size | 64 × 64 | `config/config.yaml` |
-| Feature-extraction batch size | 128 | `config/config.yaml` |
-| Classifier | Linear SVM | `config/config.yaml` |
-| SVM C | 1.0 | `config/config.yaml` |
-| Training samples | 26,640 | baseline notebook output |
-| Test samples | 12,630 | baseline notebook output |
-| Fit time | 114.97 s | baseline notebook output |
-| Test accuracy | **0.6412** | baseline notebook output |
+| Backbone | ResNet-18, pesi pre-addestrati predefiniti | `config/config.yaml` |
+| Dimensione dell'input | 64 × 64 | `config/config.yaml` |
+| Batch size dell'estrazione | 128 | `config/config.yaml` |
+| Classificatore | SVM lineare | `config/config.yaml` |
+| C della SVM | 1.0 | `config/config.yaml` |
+| Campioni di training | 26,640 | output del notebook della baseline |
+| Campioni di test | 12,630 | output del notebook della baseline |
+| Tempo di fit | 114.97 s | output del notebook della baseline |
+| Accuracy di test | **0.6412** | output del notebook della baseline |
 
-This baseline is stable because only the convex classifier is optimized after deterministic feature extraction. Its limitation is equally clear: ImageNet features are not adapted to small traffic signs, and the linear decision surface cannot recover information absent from those embeddings.
+Questa baseline è stabile perché, dopo un'estrazione deterministica delle feature, viene ottimizzato soltanto il classificatore convesso. Anche il limite è chiaro: le feature ImageNet non sono adattate a piccoli segnali stradali e una superficie decisionale lineare non può recuperare informazione assente dagli embedding.
 
-## Fine-tuning baseline
+## Baseline di fine-tuning
 
-The first neural baseline freezes the ResNet-18 backbone and trains only a new 43-class fully connected head. The split is deterministic and stratified. The notebook reports only `22,059` trainable parameters out of `11,198,571` total.
+La prima baseline neurale congela il backbone ResNet-18 e addestra soltanto una nuova testa fully connected a 43 classi. Lo split è deterministico e stratificato. Il notebook riporta soltanto `22,059` parametri addestrabili su `11,198,571` complessivi.
 
-| Parameter | Value |
+| Parametro | Valore |
 | --- | ---: |
 | Seed | 42 |
-| Train / validation | 20,820 / 5,820 |
-| Trainable layers | Final classifier only |
+| Training / validazione | 20,820 / 5,820 |
+| Layer addestrabili | Solo classificatore finale |
 | Loss | Cross-entropy |
-| Optimizer | Adam |
-| Initial learning rate | 1e-3 |
+| Ottimizzatore | Adam |
+| Learning rate iniziale | 1e-3 |
 | Batch size | 128 |
-| Epochs | 10 |
+| Epoche | 10 |
 | Scheduler | Step decay |
-| Best validation accuracy | 0.4667 at epoch 6 |
-| Test accuracy | **0.5038** |
+| Migliore accuracy di validazione | 0.4667 all'epoca 6 |
+| Accuracy di test | **0.5038** |
 
-The training accuracy reached `0.8274`, while validation remained near `0.4655`. The classifier head therefore fitted the training representation without generalizing sufficiently. This explains why the fine-tuning baseline underperformed the SVM: despite its name, almost no convolutional feature was actually fine-tuned, and the nonlinear neural head did not compensate for the frozen domain mismatch.
+L'accuracy di training ha raggiunto `0.8274`, mentre quella di validazione è rimasta vicina a `0.4655`. La testa ha quindi adattato la rappresentazione sul training senza generalizzare a sufficienza. Questo spiega perché la baseline di fine-tuning sia risultata inferiore alla SVM: nonostante il nome, quasi nessuna feature convoluzionale è stata realmente adattata e la testa neurale non lineare non ha compensato il domain mismatch del backbone congelato.
 
-## Pipeline consolidation and W&B
+## Consolidamento della pipeline e W&B
 
-The second exercise separates responsibilities into configuration, data, models, losses, training, evaluation, tracking, and visualization modules. Each local run can save the effective YAML configuration, epoch history, and summary. The final lightweight exports are versioned under [`results/`](results/); model checkpoints and full run folders remain ignored.
+Il secondo esercizio separa le responsabilità in moduli di configurazione, dati, modelli, loss, training, valutazione, tracciamento e visualizzazione. Ogni run locale può salvare configurazione YAML effettiva, cronologia delle epoche e riepilogo. Le esportazioni finali leggere sono versionate in [`results/`](results/); checkpoint e cartelle complete delle run restano ignorati.
 
-Weights & Biases (W&B) was used during development to compare training/validation accuracy, loss, learning rate, and run metadata. Integration is implemented in [`tracking.py`](src/dla_lab1/tracking.py). It is optional, disabled by default, and never performs an automatic login. Local W&B directories are not versioned because they can be large and environment-specific; the report uses exported CSV/JSON evidence instead.
+Weights & Biases (W&B) è stato usato durante lo sviluppo per confrontare accuracy di training/validazione, loss, learning rate e metadati delle run. L'integrazione è implementata in [`tracking.py`](src/dla_lab1/tracking.py). È facoltativa, disattivata per impostazione predefinita e non effettua mai un login automatico. Le directory W&B locali non sono versionate perché possono essere grandi e dipendenti dall'ambiente; la relazione usa invece evidenze CSV/JSON esportate.
 
-## Improved fine-tuning
+## Fine-tuning migliorato
 
-The improvement study unfreezes ResNet-18 `layer4` and the classifier, then compares no augmentation, spatial augmentation, aggressive augmentation, conservative augmentation, label smoothing, and discriminative learning rates. The selected documented configuration used conservative augmentation with label smoothing.
+Lo studio dei miglioramenti sblocca `layer4` e il classificatore di ResNet-18, quindi confronta assenza di augmentation, augmentation spaziale, aggressiva e conservativa, label smoothing e learning rate discriminativi. La configurazione documentata e selezionata usa augmentation conservativa con label smoothing.
 
-| Parameter | Improved configuration |
+| Parametro | Configurazione migliorata |
 | --- | ---: |
-| Trainable layers | `layer4` + `fc` |
-| Trainable share observed in notebook | 75.15% |
+| Layer addestrabili | `layer4` + `fc` |
+| Quota addestrabile osservata nel notebook | 75.15% |
 | Loss | Cross-entropy, label smoothing 0.05 |
-| Optimizer | AdamW |
-| Initial learning rate | 5e-4 |
+| Ottimizzatore | AdamW |
+| Learning rate iniziale | 5e-4 |
 | Weight decay | 0.02 |
 | Batch size | 128 |
-| Maximum epochs | 20 |
-| Scheduler | Step decay, factor 0.5 every 5 epochs |
+| Numero massimo di epoche | 20 |
+| Scheduler | Step decay, fattore 0.5 ogni 5 epoche |
 | Gradient clipping | 1.0 |
-| AMP | Enabled when CUDA is available |
-| Final notebook test accuracy | **0.8025** |
+| AMP | Attivo quando CUDA è disponibile |
+| Accuracy finale di test nel notebook | **0.8025** |
 
-### Validation comparison
+### Confronto in validazione
 
-![Validation comparison](figures/gtsrb_validation_accuracy_summary.svg)
+![Confronto in validazione](figures/gtsrb_validation_accuracy_summary.svg)
 
-Unfreezing `layer4` consistently improved validation accuracy over the head-only variants. Aggressive augmentation did not dominate conservative augmentation, which is plausible for traffic signs because strong geometric or colour changes can alter class-defining details. The plotted values come from [`run_validation_summary.csv`](results/run_validation_summary.csv).
+Lo sblocco di `layer4` ha migliorato sistematicamente l'accuracy di validazione rispetto alle varianti head-only. L'augmentation aggressiva non ha dominato quella conservativa, risultato plausibile per i segnali stradali perché forti modifiche geometriche o cromatiche possono alterare dettagli che definiscono la classe. I valori della figura provengono da [`run_validation_summary.csv`](results/run_validation_summary.csv).
 
-### Training curves
+### Curve di training
 
-![Fine-tuning curves](figures/gtsrb_training_curves.svg)
+![Curve di fine-tuning](figures/gtsrb_training_curves.svg)
 
-The improved run rapidly approaches perfect training accuracy while validation saturates below `0.77`, a visible generalization gap. Label smoothing prevents the training loss from being directly comparable with the unsmoothed baseline loss, so the report compares validation accuracy rather than claiming a lower loss.
+La run migliorata si avvicina rapidamente a un'accuracy di training perfetta, mentre la validazione si satura sotto `0.77`, mostrando un evidente divario di generalizzazione. Il label smoothing rende la loss di training non direttamente confrontabile con quella non smussata della baseline; la relazione confronta quindi l'accuracy di validazione senza affermare che la loss sia inferiore.
 
-There is an important provenance limitation: the preserved `0.8025` test output and the exported named validation histories were created at different stages of the experiment notebook. The test metric remains verifiable in the notebook, but this repository does not claim that every exported validation row was evaluated on the test set. No result has been recomputed to remove this discrepancy.
+Esiste un'importante limitazione di provenienza: l'output di test `0.8025` preservato e le cronologie di validazione denominate esportate sono stati creati in fasi differenti del notebook sperimentale. La metrica di test rimane verificabile nel notebook, ma questa repository non afferma che ogni riga esportata della validazione sia stata valutata sul test set. Nessun risultato è stato ricalcolato per eliminare questa discrepanza.
 
-### Final classification comparison
+### Confronto finale di classificazione
 
-![GTSRB test accuracy comparison](figures/gtsrb_test_accuracy_comparison.svg)
+![Confronto dell'accuracy di test GTSRB](figures/gtsrb_test_accuracy_comparison.svg)
 
-The improved model gains `0.1613` absolute accuracy over the SVM and `0.2987` over the head-only baseline. The negative head-only result remains in the report because it motivates selective unfreezing. Source: [`test_metrics.csv`](results/test_metrics.csv).
+Il modello migliorato guadagna `0.1613` di accuracy assoluta rispetto alla SVM e `0.2987` rispetto alla baseline head-only. Il risultato negativo head-only resta nella relazione perché motiva lo sblocco selettivo. Fonte: [`test_metrics.csv`](results/test_metrics.csv).
 
-No confusion-matrix array or per-example prediction file was preserved in the final run. The notebooks include class-wise classification reports, but this report does not manufacture a confusion matrix from aggregate precision/recall values.
+Nella run finale non è stata preservata una matrice di confusione né un file con le predizioni per campione. I notebook includono classification report per classe, ma la relazione non ricostruisce artificialmente una confusion matrix da valori aggregati di precision/recall.
 
-## Retrieval and Nearest-Mean Classification
+## Retrieval e Nearest-Mean Classification
 
-The training split acts as the gallery (`26,640` images) and the test split as the query set (`12,630` images). ResNet-50 features were also inspected for the retrieval/NMC exercise. Cosine similarity performed slightly better than Euclidean distance and clearly better than an unnormalized dot product.
+Lo split di training agisce da gallery (`26,640` immagini) e quello di test da insieme di query (`12,630` immagini). Per l'esercizio retrieval/NMC sono state esaminate anche feature ResNet-50. La cosine similarity è risultata leggermente migliore della distanza euclidea e nettamente migliore del dot product non normalizzato.
 
-| Method | P@1 | P@5 | P@10 |
+| Metodo | P@1 | P@5 | P@10 |
 | --- | ---: | ---: | ---: |
 | Cosine similarity | **0.4812** | **0.4594** | **0.4394** |
-| Euclidean distance | 0.4763 | 0.4505 | 0.4308 |
+| Distanza euclidea | 0.4763 | 0.4505 | 0.4308 |
 | Dot product | 0.3611 | 0.3465 | 0.3375 |
 
-Additional observed results were mAP `0.1696`, macro class mAP `0.1301`, and NMC test accuracy `0.4185`.
+Ulteriori risultati osservati sono mAP `0.1696`, macro class mAP `0.1301` e accuracy di test NMC `0.4185`.
 
-![Retrieval metrics](figures/gtsrb_retrieval_metrics.svg)
+![Metriche di retrieval](figures/gtsrb_retrieval_metrics.svg)
 
-Precision decreases as K grows because more visually similar but class-inconsistent neighbours enter the ranking. NMC is cheaper at inference because it stores one centroid per class, but it loses multimodal within-class structure. Both retrieval approaches underperform supervised fine-tuning; their value is training-free reuse and interpretability, not maximum classification accuracy.
+La precision diminuisce al crescere di K perché nel ranking entrano più vicini visivamente simili ma con classe differente. NMC è più economico in inferenza perché conserva un solo centroide per classe, ma perde la struttura multimodale interna alle classi. Entrambi gli approcci di retrieval risultano inferiori al fine-tuning supervisionato; il loro valore è il riuso senza training e l'interpretabilità, non la massima accuracy di classificazione.
 
-## What worked, what did not, and why
+## Cosa ha funzionato, cosa no e perché
 
-**Worked:** fixed pretrained features established a reproducible baseline; stratified splitting avoided missing classes; unfreezing the final residual block enabled target adaptation; conservative augmentation and label smoothing improved validation behaviour; cosine similarity was the strongest retrieval metric.
+**Ha funzionato:** le feature pre-addestrate fisse hanno definito una baseline riproducibile; lo split stratificato ha evitato classi mancanti; lo sblocco dell'ultimo blocco residuo ha permesso l'adattamento al target; augmentation conservativa e label smoothing hanno migliorato il comportamento in validazione; la cosine similarity è risultata la migliore metrica di retrieval.
 
-**Did not work as well:** the head-only neural baseline generalized worse than the SVM; aggressive augmentation reduced validation performance; no-augmentation runs reached perfect training accuracy but a substantially lower validation plateau; NMC compressed the gallery too aggressively.
+**Ha funzionato meno:** la baseline neurale head-only ha generalizzato peggio della SVM; l'augmentation aggressiva ha ridotto le prestazioni in validazione; le run senza augmentation hanno raggiunto un'accuracy di training perfetta ma un plateau di validazione molto più basso; NMC ha compresso la gallery in modo eccessivo.
 
-**Problems resolved:** reusable local modules replaced repeated notebook code; paths are relative to the laboratory root; heavy cells are controlled by flags; W&B login is manual; histories and metrics are now independently inspectable on GitHub.
+**Problemi risolti:** moduli locali riutilizzabili hanno sostituito il codice ripetuto nei notebook; i percorsi sono relativi alla root del laboratorio; le celle costose sono controllate da flag; il login W&B è manuale; cronologie e metriche sono ora ispezionabili indipendentemente su GitHub.
 
-## Limitations
+## Limiti
 
-- Only one main seed is reported; variability across independent training seeds was not measured.
-- The native 26,640-image training split observed by Torchvision is the submitted experimental basis; no attempt is made to merge other GTSRB distributions.
-- Hardware constraints favoured `64 × 64` inputs and limited the experiment budget.
-- The final confusion matrix and per-sample predictions were not saved.
-- W&B raw logs and checkpoints are local, so the versioned summaries and notebook outputs are the public evidence.
+- È riportato un solo seed principale; non è stata misurata la variabilità su training seed indipendenti.
+- Lo split di training nativo da 26,640 immagini osservato da Torchvision costituisce la base sperimentale consegnata; non sono state unite altre distribuzioni di GTSRB.
+- I limiti hardware hanno favorito input `64 × 64` e ridotto il budget sperimentale.
+- La confusion matrix finale e le predizioni per campione non sono state salvate.
+- Log W&B grezzi e checkpoint restano locali, quindi riepiloghi versionati e output dei notebook costituiscono l'evidenza pubblica.
 
-## Reproducibility
+## Riproducibilità
 
-Run notebooks in order. Quick inspection requires no training. To retrain, install the root requirements, download GTSRB through Torchvision, set `RUN_TRAINING = True` only in the desired notebook, and optionally enable W&B after an explicit `wandb login`. Feature extraction and final test evaluation have separate flags to prevent accidental recomputation.
+Eseguire i notebook in ordine. La consultazione rapida non richiede training. Per riaddestrare, installare i requisiti dalla root, scaricare GTSRB tramite Torchvision, impostare `RUN_TRAINING = True` soltanto nel notebook desiderato e, se necessario, abilitare W&B dopo un `wandb login` esplicito. Estrazione delle feature e valutazione finale sul test hanno flag separati per evitare ricalcoli accidentali.
 
-Regenerate report assets with:
+Per rigenerare gli elementi grafici della relazione:
 
 ```bash
 python tools/build_report_assets.py
 ```
 
-The command reads versioned evidence and notebook outputs; it does not train a model.
+Il comando legge evidenze versionate e output dei notebook; non addestra alcun modello.
 
-## File structure
+## Struttura dei file
 
-| Path | Purpose |
+| Percorso | Scopo |
 | --- | --- |
-| `DLA_1.ipynb` | GitHub-readable laboratory index |
-| `notebooks/` | Final executed notebooks in exercise order |
-| `exploratory/` | Historical trial notebook, retained but excluded from the final path |
-| `src/dla_lab1/` | Reusable implementation |
-| `scripts/` | Environment, training, extraction, and checkpoint evaluation entry points |
-| `config/config.yaml` | Central experiment registry and defaults |
-| `results/` | Lightweight public evidence |
-| `figures/` | Figures extracted or generated from evidence |
+| `DLA_1.ipynb` | Indice del laboratorio leggibile su GitHub |
+| `notebooks/` | Notebook finali eseguiti nell'ordine degli esercizi |
+| `exploratory/` | Notebook storico di prove, preservato ma escluso dal percorso finale |
+| `src/dla_lab1/` | Implementazione riutilizzabile |
+| `scripts/` | Entry point per ambiente, training, estrazione e valutazione checkpoint |
+| `config/config.yaml` | Registro centrale degli esperimenti e valori predefiniti |
+| `results/` | Evidenze pubbliche leggere |
+| `figures/` | Figure estratte o generate dalle evidenze |
 
-### Exploratory-notebook decision
+### Decisione sul notebook esplorativo
 
-| File | Unique content | Referenced by final report | Required for submission | Decision |
+| File | Contenuto unico | Citato nella relazione finale | Necessario per la consegna | Decisione |
 | --- | ---: | ---: | ---: | --- |
-| `exploratory/Esperimenti_di_prova.ipynb` | Yes: historical trials and W&B outputs | Only as provenance | No | Retained outside `notebooks/`; not a source for headline results |
+| `exploratory/Esperimenti_di_prova.ipynb` | Sì: prove storiche e output W&B | Solo come provenienza | No | Conservato fuori da `notebooks/`; non è fonte dei risultati principali |
 
-## Main dependencies
+## Dipendenze principali
 
-| Library | Purpose | Used in |
+| Libreria | Scopo | Utilizzata in |
 | --- | --- | --- |
-| PyTorch | Tensor computation, training, checkpoints | Fine-tuning and evaluation |
-| Torchvision | GTSRB and pretrained ResNet models | All computer-vision experiments |
-| scikit-learn | SVM, reports, metrics | Stable baseline and evaluation |
-| pandas / NumPy | Tables, metadata, evidence processing | EDA and reports |
-| Matplotlib | EDA, curves, visual retrieval | Notebooks |
-| PyYAML | Experiment configuration | Pipeline |
-| Weights & Biases | Optional run tracking | Pipeline consolidation |
+| PyTorch | Calcolo tensoriale, training, checkpoint | Fine-tuning e valutazione |
+| Torchvision | GTSRB e modelli ResNet pre-addestrati | Tutti gli esperimenti di visione artificiale |
+| scikit-learn | SVM, report, metriche | Baseline stabile e valutazione |
+| pandas / NumPy | Tabelle, metadati, elaborazione delle evidenze | EDA e relazioni |
+| Matplotlib | EDA, curve, retrieval visuale | Notebook |
+| PyYAML | Configurazione degli esperimenti | Pipeline |
+| Weights & Biases | Tracciamento facoltativo delle run | Consolidamento della pipeline |
 
-## Local modules and main functions
+## Moduli locali e funzioni principali
 
-| Function/class | Source file | Purpose | Inputs | Outputs | Used in |
+| Funzione/classe | File sorgente | Scopo | Input | Output | Utilizzata in |
 | --- | --- | --- | --- | --- | --- |
-| `build_dataloaders` | [`data.py`](src/dla_lab1/data.py) | Create stratified train/validation/test loaders | Config, transforms, root | Loaders and split metadata | Fine-tuning notebooks |
-| `build_feature_extractor` | [`models.py`](src/dla_lab1/models.py) | Remove the classifier from a pretrained ResNet | Model name, weights | CNN feature extractor | SVM and retrieval |
-| `run_finetuning` | [`experiments.py`](src/dla_lab1/experiments.py) | Execute one registered experiment | Config, experiment name, root | Model, history, metrics, artifacts | Exercises 1.3 and 3.1 |
-| `retrieval_precision_at_k` | [`features.py`](src/dla_lab1/features.py) | Compute label agreement in top-K retrieval | Similarities, labels, K | Precision@K | Exercise 3.2 |
-| `retrieval_mean_average_precision_chunked` | [`features.py`](src/dla_lab1/features.py) | Compute mAP without one full similarity allocation | Feature tensors, labels, chunk size | mAP metrics | Exercise 3.2 |
-| `nearest_mean_classifier` | [`features.py`](src/dla_lab1/features.py) | Classify by nearest class centroid | Gallery/query features and labels | Predictions | Exercise 3.2 |
-| `save_run_artifacts` | [`tracking.py`](src/dla_lab1/tracking.py) | Save config, history, summary, and optional tracking data | Run state and output path | Local evidence files | Pipeline consolidation |
+| `build_dataloaders` | [`data.py`](src/dla_lab1/data.py) | Crea loader stratificati di training/validazione/test | Configurazione, trasformazioni, root | Loader e metadati dello split | Notebook di fine-tuning |
+| `build_feature_extractor` | [`models.py`](src/dla_lab1/models.py) | Rimuove il classificatore da una ResNet pre-addestrata | Nome modello, pesi | Estrattore di feature CNN | SVM e retrieval |
+| `run_finetuning` | [`experiments.py`](src/dla_lab1/experiments.py) | Esegue un esperimento registrato | Configurazione, nome esperimento, root | Modello, cronologia, metriche, artefatti | Esercizi 1.3 e 3.1 |
+| `retrieval_precision_at_k` | [`features.py`](src/dla_lab1/features.py) | Calcola la concordanza delle etichette nel top-K retrieval | Similarità, etichette, K | Precision@K | Esercizio 3.2 |
+| `retrieval_mean_average_precision_chunked` | [`features.py`](src/dla_lab1/features.py) | Calcola la mAP senza allocare l'intera matrice di similarità | Tensori di feature, etichette, chunk size | Metriche mAP | Esercizio 3.2 |
+| `nearest_mean_classifier` | [`features.py`](src/dla_lab1/features.py) | Classifica tramite il centroide di classe più vicino | Feature ed etichette di gallery/query | Predizioni | Esercizio 3.2 |
+| `save_run_artifacts` | [`tracking.py`](src/dla_lab1/tracking.py) | Salva configurazione, cronologia, riepilogo e dati di tracciamento facoltativi | Stato della run e percorso di output | File locali di evidenza | Consolidamento della pipeline |
 
-## AI use
+## Uso dell'IA
 
-AI assistance supported requirement interpretation, debugging, module organization, documentation, and review of result provenance. It did not provide experimental observations. See [`../AI_USAGE.md`](../AI_USAGE.md).
+L'assistenza dell'IA ha supportato interpretazione dei requisiti, debugging, organizzazione dei moduli, documentazione e revisione della provenienza dei risultati. Non ha fornito osservazioni sperimentali. Si veda [`../AI_USAGE.md`](../AI_USAGE.md).
 
-## Sources
+## Fonti
 
-- [GTSRB benchmark website](https://benchmark.ini.rub.de/gtsrb_dataset.html)
-- [Torchvision GTSRB API](https://pytorch.org/vision/main/generated/torchvision.datasets.GTSRB.html)
-- [Torchvision ResNet API](https://pytorch.org/vision/stable/models/resnet.html)
-- [Scikit-learn SVC documentation](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
-- [Weights & Biases documentation](https://docs.wandb.ai/)
+- [Sito del benchmark GTSRB](https://benchmark.ini.rub.de/gtsrb_dataset.html)
+- [API Torchvision GTSRB](https://docs.pytorch.org/vision/main/generated/torchvision.datasets.GTSRB.html)
+- [API Torchvision ResNet](https://docs.pytorch.org/vision/stable/models/resnet.html)
+- [Documentazione Scikit-learn SVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
+- [Documentazione Weights & Biases](https://docs.wandb.ai/)
 
-## Conclusion
+## Conclusione
 
-The laboratory demonstrates why a stable pretrained-feature baseline is a useful control and why selective adaptation matters. The strongest result, `0.8025` test accuracy, came only after unfreezing high-level features and controlling augmentation/regularization. The retrieval experiments provide a different, lower-performing but training-free use of the representation. Negative results and remaining provenance limits are kept visible rather than smoothed over.
+Il laboratorio mostra perché una baseline stabile su feature pre-addestrate sia un controllo utile e perché l'adattamento selettivo sia importante. Il miglior risultato, accuracy di test `0.8025`, è arrivato soltanto dopo aver sbloccato feature di alto livello e controllato augmentation e regolarizzazione. Gli esperimenti di retrieval offrono un uso differente della rappresentazione, con prestazioni inferiori ma senza training. Risultati negativi e limiti residui di provenienza restano visibili invece di essere nascosti.

@@ -7,10 +7,10 @@ def project_root() -> Path:
     """
     Trova la cartella principale del progetto DLA_1.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         Path assoluto della cartella `DLA_1`, ricavato dalla posizione del file corrente.
     """
     return Path(__file__).resolve().parents[2]
@@ -20,11 +20,11 @@ def resolve_path(path: str | Path, root: str | Path | None = None) -> Path:
     """
     Converte un path relativo al progetto in un path assoluto.
 
-    Args:
+    Argomenti:
         path: Path da risolvere. Se e' gia' assoluto viene restituito invariato.
         root: Cartella di riferimento. Se non viene passata, usa `project_root()`.
 
-    Returns:
+    Restituisce:
         Path assoluto pronto per essere usato da script e notebook.
     """
     value = Path(path)
@@ -37,10 +37,10 @@ def ensure_dir(path: str | Path) -> Path:
     """
     Crea una cartella se non esiste.
 
-    Args:
+    Argomenti:
         path: Cartella da creare.
 
-    Returns:
+    Restituisce:
         Path della cartella creata o gia' esistente.
     """
     value = Path(path)

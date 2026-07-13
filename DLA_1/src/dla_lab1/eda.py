@@ -10,10 +10,10 @@ def metadata_summary(metadata: pd.DataFrame) -> dict:
     Restituisce numero di campioni, numero di classi, classi min/max
     e dimensioni min/max/medie delle immagini.
 
-    Args:
+    Argomenti:
         metadata: DataFrame ottenuto dai CSV GTSRB del training set.
 
-    Returns:
+    Restituisce:
         Dizionario con conteggi delle classi e statistiche sulle dimensioni immagini.
     """
     class_counts = metadata["ClassId"].value_counts().sort_index()
@@ -37,10 +37,10 @@ def class_distribution(metadata: pd.DataFrame) -> pd.DataFrame:
 
     Lo usiamo per mostrare e commentare lo sbilanciamento del dataset.
 
-    Args:
+    Argomenti:
         metadata: DataFrame con almeno la colonna `ClassId`.
 
-    Returns:
+    Restituisce:
         DataFrame con colonne `class_id` e `count`, una riga per classe.
     """
     counts = metadata["ClassId"].value_counts().sort_index()

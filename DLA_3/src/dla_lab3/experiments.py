@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 
 from .a2c import (
@@ -20,16 +19,16 @@ from .seed import set_seed
 
 
 def make_lunar_env_factory(seed_value: int):
-    """Create a factory for one seeded LunarLander environment.
+    """Crea una factory per un ambiente LunarLander con seed.
 
-    Args:
-        seed_value: Seed applied to reset and action space.
+    Argomenti:
+        seed_value: Seed applicato a reset e spazio delle azioni.
 
-    What it does:
-        Builds a closure compatible with Gymnasium vector environments.
+    Operazione:
+        Costruisce una closure compatibile con gli ambienti vettoriali Gymnasium.
 
-    Outputs:
-        Callable that returns one configured `LunarLander-v3` environment.
+    Output:
+        Callable che restituisce un ambiente `LunarLander-v3` configurato.
     """
 
     def _factory():
@@ -44,17 +43,17 @@ def make_lunar_env_factory(seed_value: int):
 
 
 def save_json_artifact(name: str, payload: Any) -> Path:
-    """Save a JSON artifact under the project artifacts folder.
+    """Salva un artefatto JSON nella cartella `artifacts` del progetto.
 
-    Args:
-        name: Output filename relative to `artifacts`.
-        payload: JSON-serializable object.
+    Argomenti:
+        name: Nome del file relativo ad `artifacts`.
+        payload: Oggetto serializzabile in JSON.
 
-    What it does:
-        Stores experiment results outside notebook outputs.
+    Operazione:
+        Memorizza i risultati sperimentali fuori dagli output dei notebook.
 
-    Outputs:
-        Path to the saved artifact.
+    Output:
+        Percorso dell'artefatto salvato.
     """
 
     path = artifact_dir(name)
@@ -64,18 +63,18 @@ def save_json_artifact(name: str, payload: Any) -> Path:
 
 
 def resolve_checkpoint(filename: str | None, project_root: str | Path | None = None) -> Path | None:
-    """Resolve a checkpoint name against known project locations.
+    """Risolve il nome di un checkpoint nelle posizioni note del progetto.
 
-    Args:
-        filename: Checkpoint filename or path.
-        project_root: Optional project root used as an extra search location.
+    Argomenti:
+        filename: Nome o percorso del checkpoint.
+        project_root: Root opzionale usata come ulteriore posizione di ricerca.
 
-    What it does:
-        Searches generated checkpoints, linked old checkpoints, project root and
-        the current path.
+    Operazione:
+        Cerca tra checkpoint generati, checkpoint storici collegati, root del progetto e
+        percorso corrente.
 
-    Outputs:
-        Existing checkpoint path, or None when not found.
+    Output:
+        Percorso esistente oppure None se il checkpoint non viene trovato.
     """
 
     if filename in {None, ""}:
@@ -96,16 +95,16 @@ def resolve_checkpoint(filename: str | None, project_root: str | Path | None = N
 
 
 def checkpoint_variants(filename: str) -> list[str]:
-    """Return best-eval, best-train and last checkpoint filenames.
+    """Restituisce i nomi dei checkpoint best-eval, best-train e last.
 
-    Args:
-        filename: Base checkpoint filename.
+    Argomenti:
+        filename: Nome di base del checkpoint.
 
-    What it does:
-        Mirrors the filenames saved by `train_a2c_vectorized`.
+    Operazione:
+        Riproduce i nomi salvati da `train_a2c_vectorized`.
 
-    Outputs:
-        Candidate checkpoint filenames.
+    Output:
+        Nomi dei checkpoint candidati.
     """
 
     path = Path(filename)
@@ -117,17 +116,17 @@ def checkpoint_variants(filename: str) -> list[str]:
 
 
 def print_lunar_preset_summary(ll_config: dict[str, Any], selected_experiments: list[str]) -> None:
-    """Print the LunarLander preset table in a readable form.
+    """Stampa la tabella dei preset LunarLander in forma leggibile.
 
-    Args:
-        ll_config: `a2c_lunarlander` section of the YAML config.
-        selected_experiments: Presets selected for the current notebook run.
+    Argomenti:
+        ll_config: Sezione `a2c_lunarlander` della configurazione YAML.
+        selected_experiments: Preset selezionati per la run corrente del notebook.
 
-    What it does:
-        Displays the rationale, available presets and selected presets.
+    Operazione:
+        Mostra motivazione, preset disponibili e preset selezionati.
 
-    Outputs:
-        None. Prints a concise summary.
+    Output:
+        Nessuno; stampa un riepilogo conciso.
     """
 
     print("Reference note:")
@@ -150,20 +149,20 @@ def train_lunar_presets(
     seed: int,
     run_training: bool,
 ) -> dict[str, dict[str, Any]]:
-    """Train selected LunarLander A2C presets.
+    """Addestra i preset A2C LunarLander selezionati.
 
-    Args:
-        selected_experiments: Names from `ll_config["experiments"]`.
-        ll_config: LunarLander A2C config section.
-        seed: Base random seed.
-        run_training: If False, skip training and return an empty dictionary.
+    Argomenti:
+        selected_experiments: Nomi presenti in `ll_config["experiments"]`.
+        ll_config: Sezione A2C LunarLander della configurazione.
+        seed: Seed casuale di base.
+        run_training: Se False, salta il training e restituisce un dizionario vuoto.
 
-    What it does:
-        Runs vectorized A2C for each selected preset, saving best-eval,
-        best-train and last checkpoints under `checkpoints`.
+    Operazione:
+        Esegue A2C vettorizzato per ogni preset e salva i checkpoint best-eval,
+        best-train e last in `checkpoints`.
 
-    Outputs:
-        Dictionary mapping preset names to training histories.
+    Output:
+        Dizionario che associa i preset alle cronologie di training.
     """
 
     histories: dict[str, dict[str, Any]] = {}
@@ -217,7 +216,10 @@ def train_lunar_presets(
             load_a2c_checkpoint(net, initial_path)
             print("Loaded initial checkpoint:", initial_path)
         elif preset.get("initial_checkpoint") is not None:
-            print("Initial checkpoint not found, training from random weights:", preset["initial_checkpoint"])
+            print(
+                "Initial checkpoint not found, training from random weights:",
+                preset["initial_checkpoint"],
+            )
 
         history = train_a2c_vectorized(
             net,
@@ -265,19 +267,19 @@ def collect_current_lunar_candidates(
     ll_config: dict[str, Any],
     histories: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Collect checkpoint candidates generated by the current workflow.
+    """Raccoglie i checkpoint candidati generati dal flusso corrente.
 
-    Args:
-        selected_experiments: Presets considered for final selection.
-        ll_config: LunarLander A2C config section.
-        histories: Optional histories returned by `train_lunar_presets`.
+    Argomenti:
+        selected_experiments: Preset considerati per la selezione finale.
+        ll_config: Sezione A2C LunarLander della configurazione.
+        histories: Cronologie opzionali restituite da `train_lunar_presets`.
 
-    What it does:
-        Collects best-eval, best-train and last checkpoints for selected
-        presets. It intentionally avoids old exploratory checkpoints by default.
+    Operazione:
+        Raccoglie i checkpoint best-eval, best-train e last dei preset
+        selezionati, escludendo intenzionalmente quelli esplorativi storici.
 
-    Outputs:
-        List of candidate dictionaries with name, source, preset and path.
+    Output:
+        Lista di candidati con nome, fonte, preset e percorso.
     """
 
     candidates: list[dict[str, Any]] = []
@@ -330,21 +332,21 @@ def evaluate_lunar_checkpoint_candidate(
     temperature: float,
     seed_start: int,
 ) -> dict[str, Any]:
-    """Evaluate one LunarLander checkpoint.
+    """Valuta un checkpoint LunarLander.
 
-    Args:
-        candidate: Candidate dictionary with a checkpoint path.
-        n_eval: Number of evaluation episodes.
-        mode: `greedy` or `sample`.
-        temperature: Stochastic policy temperature.
-        seed_start: First evaluation seed.
+    Argomenti:
+        candidate: Dizionario del candidato con percorso del checkpoint.
+        n_eval: Numero di episodi di valutazione.
+        mode: `greedy` oppure `sample`.
+        temperature: Temperatura della policy stocastica.
+        seed_start: Primo seed di valutazione.
 
-    What it does:
-        Loads the checkpoint, runs fresh episodes and collects return, success,
-        length and action-frequency metrics.
+    Operazione:
+        Carica il checkpoint, esegue episodi nuovi e raccoglie return, successo,
+        lunghezza e frequenze delle azioni.
 
-    Outputs:
-        Dictionary with candidate metadata and evaluation metrics.
+    Output:
+        Dizionario con metadati del candidato e metriche di valutazione.
     """
 
     env = make_env("LunarLander-v3", seed=seed_start, continuous=False, enable_wind=False)
@@ -404,18 +406,18 @@ def evaluate_lunar_candidates(
     candidates: list[dict[str, Any]],
     ll_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """Evaluate all LunarLander candidate checkpoints.
+    """Valuta tutti i checkpoint LunarLander candidati.
 
-    Args:
-        candidates: Checkpoint candidates from the current workflow.
-        ll_config: LunarLander A2C config section.
+    Argomenti:
+        candidates: Checkpoint candidati del flusso corrente.
+        ll_config: Sezione A2C LunarLander della configurazione.
 
-    What it does:
-        Runs fresh evaluation episodes for every candidate and saves the table
-        as a JSON artifact.
+    Operazione:
+        Esegue episodi nuovi per ciascun candidato e salva la tabella
+        come artefatto JSON.
 
-    Outputs:
-        List of evaluation-result dictionaries.
+    Output:
+        Lista dei dizionari dei risultati di valutazione.
     """
 
     results = []
@@ -441,22 +443,22 @@ def select_lunar_checkpoint(
     selection_results: list[dict[str, Any]],
     metric: str = "avg_return",
 ) -> dict[str, Any]:
-    """Select the best checkpoint from current evaluation results.
+    """Seleziona il checkpoint migliore dai risultati di valutazione correnti.
 
-    Args:
-        selection_results: Evaluation results for candidate checkpoints.
-        metric: Primary metric, usually `avg_return`.
+    Argomenti:
+        selection_results: Risultati di valutazione dei checkpoint candidati.
+        metric: Metrica primaria, normalmente `avg_return`.
 
-    What it does:
-        Selects the highest primary metric. Ties are broken by higher success
-        rate, then lower return standard deviation.
+    Operazione:
+        Seleziona la metrica primaria più alta; a parità preferisce un success rate
+        maggiore e poi una deviazione standard inferiore.
 
-    Outputs:
-        The selected result dictionary.
+    Output:
+        Dizionario del risultato selezionato.
     """
 
     if not selection_results:
-        raise RuntimeError("No LunarLander checkpoint was evaluated.")
+        raise RuntimeError("Non è stato valutato alcun checkpoint LunarLander.")
 
     best_by_metric = max(
         selection_results,
@@ -475,25 +477,26 @@ def select_lunar_checkpoint(
         ),
     )
 
-    print("Checkpoint-selection summary:")
+    print("Riepilogo della selezione dei checkpoint:")
     print(
-        f"- best {metric}: {best_by_metric['name']} "
+        f"- migliore valore di {metric}: {best_by_metric['name']} "
         f"(avg={best_by_metric['avg_return']:.2f}, "
         f"success={best_by_metric['success_rate']:.1f}%)"
     )
     print(
-        f"- best success rate: {best_by_success['name']} "
+        f"- migliore percentuale di successo: {best_by_success['name']} "
         f"(avg={best_by_success['avg_return']:.2f}, "
         f"success={best_by_success['success_rate']:.1f}%)"
     )
     if best_by_metric["path"] != best_by_success["path"]:
         print(
-            "The final checkpoint is selected by the configured primary metric. "
-            "Report the success-rate alternative when the two choices differ."
+            "Il checkpoint finale è selezionato con la metrica primaria configurata. "
+            "Quando le due scelte differiscono, va riportata anche l'alternativa "
+            "basata sulla percentuale di successo."
         )
 
     selected = best_by_metric
-    print("Selected checkpoint:")
+    print("Checkpoint selezionato:")
     print(json.dumps(selected, indent=2))
     return selected
 
@@ -502,18 +505,18 @@ def run_lunar_temperature_sweep(
     selected_checkpoint: dict[str, Any],
     ll_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """Evaluate the selected checkpoint at multiple temperatures.
+    """Valuta il checkpoint selezionato a più temperature della policy.
 
-    Args:
-        selected_checkpoint: Result dictionary selected by
+    Argomenti:
+        selected_checkpoint: Dizionario selezionato da
             `select_lunar_checkpoint`.
-        ll_config: LunarLander A2C config section.
+        ll_config: Sezione A2C LunarLander della configurazione.
 
-    What it does:
-        Runs fresh stochastic evaluations for each temperature in the YAML grid.
+    Operazione:
+        Esegue valutazioni stocastiche nuove per ogni temperatura della griglia YAML.
 
-    Outputs:
-        List of temperature evaluation results.
+    Output:
+        Lista dei risultati di valutazione per temperatura.
     """
 
     candidate = {
@@ -543,8 +546,10 @@ def run_lunar_temperature_sweep(
     return results
 
 
-def _policy_selection_key(row: dict[str, Any], metric: str) -> tuple[float, float, float, float, float]:
-    """Return a deterministic ordering key for policy configuration selection."""
+def _policy_selection_key(
+    row: dict[str, Any], metric: str
+) -> tuple[float, float, float, float, float]:
+    """Restituisce una chiave deterministica per ordinare le configurazioni della policy."""
 
     primary = policy_configuration_score(row, metric)
     return (
@@ -557,20 +562,20 @@ def _policy_selection_key(row: dict[str, Any], metric: str) -> tuple[float, floa
 
 
 def policy_configuration_score(row: dict[str, Any], metric: str) -> float:
-    """Compute the scalar score used to rank final policy configurations.
+    """Calcola il punteggio scalare usato per ordinare le configurazioni finali.
 
-    Args:
-        row: Policy-configuration metrics from evaluation.
-        metric: One of the direct metric names or `reliability_score`.
+    Argomenti:
+        row: Metriche di valutazione della configurazione della policy.
+        metric: Nome di una metrica diretta oppure `reliability_score`.
 
-    What it does:
-        Keeps `avg_return` available for the official solved criterion, but
-        adds a reliability-oriented score for unsolved LunarLander runs. The
-        reliability score still rewards average return, while giving extra
-        weight to successful landings and penalizing truncated episodes.
+    Operazione:
+        Mantiene `avg_return` per il criterio ufficiale di soluzione e aggiunge
+        un punteggio di affidabilità per le run non risolutive. Il punteggio
+        premia il return medio e gli atterraggi riusciti, penalizzando gli episodi
+        troncati.
 
-    Outputs:
-        Scalar score used by `select_lunar_policy_configuration`.
+    Output:
+        Punteggio scalare usato da `select_lunar_policy_configuration`.
     """
 
     if metric == "reliability_score":
@@ -580,7 +585,7 @@ def policy_configuration_score(row: dict[str, Any], metric: str) -> float:
             - 2.0 * float(row.get("truncation_rate", 0.0))
         )
     if metric not in row:
-        raise KeyError(f"Unknown policy-selection metric: {metric}")
+        raise KeyError(f"Metrica di selezione della policy sconosciuta: {metric}")
     return float(row[metric])
 
 
@@ -588,24 +593,24 @@ def evaluate_lunar_policy_configurations(
     selection_results: list[dict[str, Any]],
     ll_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """Evaluate checkpoint, action-mode and temperature combinations.
+    """Valuta combinazioni di checkpoint, modalità delle azioni e temperatura.
 
-    Args:
-        selection_results: Candidate checkpoint results from
+    Argomenti:
+        selection_results: Risultati dei checkpoint candidati prodotti da
             `evaluate_lunar_candidates`.
-        ll_config: LunarLander A2C config section.
+        ll_config: Sezione A2C LunarLander della configurazione.
 
-    What it does:
-        Takes the most promising checkpoints from the current run, evaluates
-        greedy action selection and stochastic action selection over the
-        configured temperature grid, and stores the full table as an artifact.
+    Operazione:
+        Prende i checkpoint più promettenti, valuta la selezione greedy e
+        stocastica delle azioni sulla griglia di temperature configurata e
+        memorizza la tabella completa come artefatto.
 
-    Outputs:
-        List of policy-configuration evaluation dictionaries.
+    Output:
+        Lista dei dizionari di valutazione delle configurazioni della policy.
     """
 
     if not selection_results:
-        raise RuntimeError("No checkpoint selection result is available.")
+        raise RuntimeError("Non è disponibile alcun risultato di selezione dei checkpoint.")
 
     top_k = int(ll_config.get("policy_selection_top_k", 4))
     top_by_return = sorted(
@@ -621,8 +626,11 @@ def evaluate_lunar_policy_configurations(
 
     candidates_by_path: dict[str, dict[str, Any]] = {}
     for reason, rows in [
-        (f"top {top_k} by average return at T={ll_config['selection_temperature']}", top_by_return),
-        (f"top {top_k} by success rate at T={ll_config['selection_temperature']}", top_by_success),
+        (f"primi {top_k} per return medio a T={ll_config['selection_temperature']}", top_by_return),
+        (
+            f"primi {top_k} per percentuale di successo a T={ll_config['selection_temperature']}",
+            top_by_success,
+        ),
     ]:
         for row in rows:
             key = str(row["path"])
@@ -645,21 +653,25 @@ def evaluate_lunar_policy_configurations(
     temperatures = [float(t) for t in ll_config["temperature_grid"]]
     include_greedy = bool(ll_config.get("policy_selection_include_greedy", True))
 
-    print("Policy-configuration evaluation setup:")
+    print("Configurazione della valutazione delle policy:")
     print(
-        f"- first pass evaluated {len(selection_results)} checkpoints with "
-        f"mode={ll_config['selection_mode']} and T={float(ll_config['selection_temperature']):.2f}"
+        f"- la prima fase ha valutato {len(selection_results)} checkpoint con "
+        f"modalità={ll_config['selection_mode']} e T={float(ll_config['selection_temperature']):.2f}"
     )
-    print(f"- second pass evaluates {len(candidates_by_path)} checkpoint candidates")
-    print(f"- for each candidate: {'greedy + ' if include_greedy else ''}sample temperatures {temperatures}")
-    print(f"- episodes per configuration: {n_eval}")
-    print("Checkpoint candidates:")
+    print(f"- la seconda fase valuta {len(candidates_by_path)} checkpoint candidati")
+    print(
+        f"- per ogni candidato: {'greedy + ' if include_greedy else ''}temperature sample {temperatures}"
+    )
+    print(f"- episodi per configurazione: {n_eval}")
+    print("Checkpoint candidati:")
     for candidate in candidates_by_path.values():
         reasons = "; ".join(candidate["candidate_reasons"])
         print(f"  - {candidate['name']} ({candidate['preset']}): {reasons}")
 
     for candidate_index, candidate in enumerate(candidates_by_path.values()):
-        candidate_for_eval = {key: candidate[key] for key in ["name", "source", "preset", "checkpoint_type", "path"]}
+        candidate_for_eval = {
+            key: candidate[key] for key in ["name", "source", "preset", "checkpoint_type", "path"]
+        }
         if include_greedy:
             result = evaluate_lunar_checkpoint_candidate(
                 candidate_for_eval,
@@ -700,60 +712,64 @@ def select_lunar_policy_configuration(
     policy_results: list[dict[str, Any]],
     metric: str = "avg_return",
 ) -> dict[str, Any]:
-    """Select the final checkpoint, action mode and temperature.
+    """Seleziona checkpoint, modalità delle azioni e temperatura finali.
 
-    Args:
-        policy_results: Results from `evaluate_lunar_policy_configurations`.
-        metric: Primary metric used for the final choice.
+    Argomenti:
+        policy_results: Risultati di `evaluate_lunar_policy_configurations`.
+        metric: Metrica primaria usata per la scelta finale.
 
-    What it does:
-        Selects a complete policy configuration. This makes temperature and
-        greedy/stochastic action selection part of model selection instead of a
-        separate afterthought.
+    Operazione:
+        Seleziona una configurazione completa, rendendo temperatura e modalità
+        greedy/stocastica parte della selezione del modello, non un controllo
+        separato successivo.
 
-    Outputs:
-        Selected policy-configuration dictionary.
+    Output:
+        Dizionario della configurazione selezionata.
     """
 
     if not policy_results:
-        raise RuntimeError("No policy configuration was evaluated.")
+        raise RuntimeError("Non è stata valutata alcuna configurazione della policy.")
 
     for row in policy_results:
         row["reliability_score"] = policy_configuration_score(row, "reliability_score")
 
     selected = max(policy_results, key=lambda row: _policy_selection_key(row, metric))
     best_success = max(policy_results, key=lambda row: _policy_selection_key(row, "success_rate"))
-    fewest_trunc = min(policy_results, key=lambda row: (row.get("truncation_rate", 100.0), -row["avg_return"]))
-    top_by_metric = sorted(policy_results, key=lambda row: _policy_selection_key(row, metric), reverse=True)[:5]
+    fewest_trunc = min(
+        policy_results, key=lambda row: (row.get("truncation_rate", 100.0), -row["avg_return"])
+    )
+    top_by_metric = sorted(
+        policy_results, key=lambda row: _policy_selection_key(row, metric), reverse=True
+    )[:5]
 
-    print("Policy-configuration summary:")
-    print(f"- selection metric: {metric}")
+    print("Riepilogo delle configurazioni della policy:")
+    print(f"- metrica di selezione: {metric}")
     if metric == "reliability_score":
         print("- reliability_score = avg_return + 2 * success_rate - 2 * truncation_rate")
-    print("Top configurations by selected metric:")
+    print("Migliori configurazioni secondo la metrica selezionata:")
     for rank, row in enumerate(top_by_metric, start=1):
         print(
             f"  {rank}. {row['name']} | {row['mode']} | T={row['temperature']:.2f} | "
-            f"avg={row['avg_return']:.2f} | success={row['success_rate']:.1f}% | "
-            f"trunc={row['truncation_rate']:.1f}% | reliability={row['reliability_score']:.2f}"
+            f"media={row['avg_return']:.2f} | successo={row['success_rate']:.1f}% | "
+            f"troncati={row['truncation_rate']:.1f}% | affidabilità={row['reliability_score']:.2f}"
         )
     print(
-        f"- selected by {metric}: {selected['name']} | mode={selected['mode']} | "
-        f"T={selected['temperature']:.2f} | avg={selected['avg_return']:.2f} | "
-        f"success={selected['success_rate']:.1f}% | trunc={selected['truncation_rate']:.1f}% | "
-        f"reliability={selected['reliability_score']:.2f}"
+        f"- selezionata secondo {metric}: {selected['name']} | modalità={selected['mode']} | "
+        f"T={selected['temperature']:.2f} | media={selected['avg_return']:.2f} | "
+        f"successo={selected['success_rate']:.1f}% | troncati={selected['truncation_rate']:.1f}% | "
+        f"affidabilità={selected['reliability_score']:.2f}"
     )
     print(
-        f"- best success rate: {best_success['name']} | mode={best_success['mode']} | "
-        f"T={best_success['temperature']:.2f} | avg={best_success['avg_return']:.2f} | "
-        f"success={best_success['success_rate']:.1f}% | trunc={best_success['truncation_rate']:.1f}%"
+        f"- migliore percentuale di successo: {best_success['name']} | modalità={best_success['mode']} | "
+        f"T={best_success['temperature']:.2f} | media={best_success['avg_return']:.2f} | "
+        f"successo={best_success['success_rate']:.1f}% | troncati={best_success['truncation_rate']:.1f}%"
     )
     print(
-        f"- fewest truncated episodes: {fewest_trunc['name']} | mode={fewest_trunc['mode']} | "
-        f"T={fewest_trunc['temperature']:.2f} | avg={fewest_trunc['avg_return']:.2f} | "
-        f"success={fewest_trunc['success_rate']:.1f}% | trunc={fewest_trunc['truncation_rate']:.1f}%"
+        f"- meno episodi troncati: {fewest_trunc['name']} | modalità={fewest_trunc['mode']} | "
+        f"T={fewest_trunc['temperature']:.2f} | media={fewest_trunc['avg_return']:.2f} | "
+        f"successo={fewest_trunc['success_rate']:.1f}% | troncati={fewest_trunc['truncation_rate']:.1f}%"
     )
-    print("Selected final policy configuration:")
+    print("Configurazione finale della policy selezionata:")
     print(json.dumps(selected, indent=2))
     return selected
 
@@ -762,23 +778,23 @@ def choose_final_temperature(
     temperature_results: list[dict[str, Any]],
     preferred_temperature: float = 1.0,
 ) -> float:
-    """Choose the final policy temperature.
+    """Sceglie la temperatura finale della policy.
 
-    Args:
-        temperature_results: Results from `run_lunar_temperature_sweep`.
-        preferred_temperature: Temperature chosen for qualitative stability.
+    Argomenti:
+        temperature_results: Risultati di `run_lunar_temperature_sweep`.
+        preferred_temperature: Temperatura scelta per la stabilità qualitativa.
 
-    What it does:
-        Uses the preferred temperature when it was evaluated. This keeps the
-        final choice explicit: temperature 1.0 is often easier to justify than
-        chasing a noisy maximum from one sweep.
+    Operazione:
+        Usa la temperatura preferita quando è stata valutata e rende la scelta
+        finale esplicita: una temperatura motivata è preferibile a inseguire
+        un massimo rumoroso di un singolo sweep.
 
-    Outputs:
-        Selected temperature.
+    Output:
+        Temperatura selezionata.
     """
 
     if not temperature_results:
-        raise RuntimeError("No temperature result was provided.")
+        raise RuntimeError("Non è stato fornito alcun risultato per le temperature.")
 
     best_avg = max(temperature_results, key=lambda row: row["avg_return"])
     best_success = max(
@@ -790,31 +806,31 @@ def choose_final_temperature(
         ),
     )
 
-    print("Temperature sweep summary:")
+    print("Riepilogo dello sweep della temperatura:")
     print(
-        f"- best average return: T={best_avg['temperature']:.2f} "
+        f"- migliore return medio: T={best_avg['temperature']:.2f} "
         f"(avg={best_avg['avg_return']:.2f}, success={best_avg['success_rate']:.1f}%)"
     )
     print(
-        f"- best success rate: T={best_success['temperature']:.2f} "
+        f"- migliore percentuale di successo: T={best_success['temperature']:.2f} "
         f"(avg={best_success['avg_return']:.2f}, success={best_success['success_rate']:.1f}%)"
     )
     print(
-        "Temperature is an inference-time sampling parameter: it changes "
-        "Categorical(logits / T), but it does not update checkpoint weights."
+        "La temperatura è un parametro di campionamento usato in inferenza: modifica "
+        "Categorical(logits / T), ma non aggiorna i pesi del checkpoint."
     )
 
     evaluated = {float(row["temperature"]) for row in temperature_results}
     if preferred_temperature in evaluated:
         print(
-            f"Selected fixed temperature for final evaluation and visual rollouts: "
+            f"Temperatura fissa selezionata per valutazione finale e rollout visuali: "
             f"{preferred_temperature}"
         )
         return preferred_temperature
 
     fallback = max(temperature_results, key=lambda row: row["avg_return"])
     print(
-        "Preferred temperature not evaluated; selected best average return:",
+        "Temperatura preferita non valutata; selezionato il miglior return medio:",
         fallback["temperature"],
     )
     return float(fallback["temperature"])
@@ -826,20 +842,20 @@ def final_lunar_evaluation(
     temperature: float,
     mode: str = "sample",
 ) -> dict[str, Any]:
-    """Run the final LunarLander evaluation.
+    """Esegue la valutazione finale LunarLander.
 
-    Args:
-        selected_checkpoint: Selected checkpoint result dictionary.
-        ll_config: LunarLander A2C config section.
-        temperature: Final stochastic policy temperature.
-        mode: Final action-selection mode: `greedy` or `sample`.
+    Argomenti:
+        selected_checkpoint: Dizionario del checkpoint selezionato.
+        ll_config: Sezione A2C LunarLander della configurazione.
+        temperature: Temperatura finale della policy stocastica.
+        mode: Modalità finale delle azioni: `greedy` o `sample`.
 
-    What it does:
-        Runs a larger evaluation sample than the selection step and saves the
-        metrics as a JSON artifact.
+    Operazione:
+        Usa un campione più ampio rispetto alla selezione e salva le metriche
+        come artefatto JSON.
 
-    Outputs:
-        Final evaluation metrics.
+    Output:
+        Metriche della valutazione finale.
     """
 
     candidate = {
@@ -862,54 +878,62 @@ def final_lunar_evaluation(
 
 
 def print_lunar_evaluation_result(title: str, result: dict[str, Any]) -> None:
-    """Print LunarLander evaluation metrics.
+    """Stampa le metriche di valutazione LunarLander.
 
-    Args:
-        title: Section title.
-        result: Metrics dictionary.
+    Argomenti:
+        title: Titolo della sezione.
+        result: Dizionario delle metriche.
 
-    What it does:
-        Formats the most important evaluation metrics for notebook output.
+    Operazione:
+        Formatta le metriche principali per l'output del notebook.
 
-    Outputs:
-        None. Prints metrics.
+    Output:
+        Nessuno; stampa le metriche.
     """
 
     print(title)
     print("Checkpoint:", result["name"])
-    print("Source:", result["source"])
+    print("Origine:", result["source"])
     print("Preset:", result.get("preset"))
-    print("Temperature:", result["temperature"])
-    print("Average return:", round(result["avg_return"], 2))
-    print("Std return:", round(result["std_return"], 2))
-    print("Min return:", round(result["min_return"], 2))
-    print("Max return:", round(result["max_return"], 2))
-    print("Average length:", round(result["avg_length"], 2))
-    print("Success rate >= 200:", f"{result['success_rate']:.1f}%")
-    print("Terminated episodes:", f"{result['terminated']}/{result['n_eval']}")
-    print("Truncated episodes:", f"{result['truncated']}/{result['n_eval']}")
-    print("Action frequencies:", [round(x, 3) for x in result["action_freq"]])
+    print("Temperatura:", result["temperature"])
+    print("Return medio:", round(result["avg_return"], 2))
+    print("Deviazione standard del return:", round(result["std_return"], 2))
+    print("Return minimo:", round(result["min_return"], 2))
+    print("Return massimo:", round(result["max_return"], 2))
+    print("Lunghezza media:", round(result["avg_length"], 2))
+    print("Percentuale di successo >= 200:", f"{result['success_rate']:.1f}%")
+    print("Episodi terminati:", f"{result['terminated']}/{result['n_eval']}")
+    print("Episodi troncati:", f"{result['truncated']}/{result['n_eval']}")
+    print("Frequenze delle azioni:", [round(x, 3) for x in result["action_freq"]])
     if result.get("last_quarter_action_freq") is not None:
-        print("Last-quarter action frequencies:", [round(x, 3) for x in result["last_quarter_action_freq"]])
+        print(
+            "Frequenze delle azioni nell'ultimo quarto:",
+            [round(x, 3) for x in result["last_quarter_action_freq"]],
+        )
     if "final_abs_x" in result:
-        print("Final |x|:", round(result["final_abs_x"], 3))
-        print("Final |vertical velocity|:", round(result["final_abs_vy"], 3))
-        print("Final |angle|:", round(result["final_abs_angle"], 3))
-        print("Final leg contact rates:", f"{result['final_left_leg_contact_rate']:.1f}% / {result['final_right_leg_contact_rate']:.1f}%")
+        print("|x| finale:", round(result["final_abs_x"], 3))
+        print("|velocità verticale| finale:", round(result["final_abs_vy"], 3))
+        print("|angolo| finale:", round(result["final_abs_angle"], 3))
+        print(
+            "Percentuali finali di contatto delle gambe:",
+            f"{result['final_left_leg_contact_rate']:.1f}% / {result['final_right_leg_contact_rate']:.1f}%",
+        )
 
 
-def plot_lunar_selection(selection_results: list[dict[str, Any]], solved_threshold: float = 200.0) -> None:
-    """Plot checkpoint-selection metrics.
+def plot_lunar_selection(
+    selection_results: list[dict[str, Any]], solved_threshold: float = 200.0
+) -> None:
+    """Traccia le metriche di selezione dei checkpoint.
 
-    Args:
-        selection_results: Candidate evaluation results.
-        solved_threshold: Average return threshold for solving LunarLander.
+    Argomenti:
+        selection_results: Risultati di valutazione dei candidati.
+        solved_threshold: Soglia del return medio per risolvere LunarLander.
 
-    What it does:
-        Shows average return and success rate for all candidate checkpoints.
+    Operazione:
+        Mostra return medio e success rate di tutti i checkpoint candidati.
 
-    Outputs:
-        Matplotlib figure displayed in the notebook.
+    Output:
+        Figura Matplotlib mostrata nel notebook.
     """
 
     names = [row["name"] for row in selection_results]
@@ -918,31 +942,33 @@ def plot_lunar_selection(selection_results: list[dict[str, Any]], solved_thresho
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].barh(names, avg_returns, color="tab:blue")
-    axes[0].axvline(solved_threshold, linestyle="--", color="tab:green", label="Solved threshold")
-    axes[0].set_xlabel("Average return")
-    axes[0].set_title("Checkpoint selection - return")
+    axes[0].axvline(
+        solved_threshold, linestyle="--", color="tab:green", label="Soglia di soluzione"
+    )
+    axes[0].set_xlabel("Return medio")
+    axes[0].set_title("Selezione checkpoint - return")
     axes[0].legend()
 
     axes[1].barh(names, success_rates, color="tab:orange")
-    axes[1].set_xlabel("Success rate >= 200 (%)")
-    axes[1].set_title("Checkpoint selection - success rate")
+    axes[1].set_xlabel("Percentuale di successo >= 200 (%)")
+    axes[1].set_title("Selezione checkpoint - percentuale di successo")
 
     plt.tight_layout()
     plt.show()
 
 
 def plot_temperature_sweep(temperature_results: list[dict[str, Any]]) -> None:
-    """Plot temperature sweep results.
+    """Traccia i risultati dello sweep della temperatura.
 
-    Args:
-        temperature_results: Temperature evaluation results.
+    Argomenti:
+        temperature_results: Risultati di valutazione delle temperature.
 
-    What it does:
-        Shows average return and success rate as a function of policy
-        temperature.
+    Operazione:
+        Mostra return medio e success rate in funzione della temperatura
+        della policy.
 
-    Outputs:
-        Matplotlib figure displayed in the notebook.
+    Output:
+        Figura Matplotlib mostrata nel notebook.
     """
 
     temps = [row["temperature"] for row in temperature_results]
@@ -950,15 +976,15 @@ def plot_temperature_sweep(temperature_results: list[dict[str, Any]]) -> None:
     success_rates = [row["success_rate"] for row in temperature_results]
 
     fig, ax1 = plt.subplots(figsize=(8, 4))
-    ax1.plot(temps, avg_returns, marker="o", color="tab:blue", label="Average return")
+    ax1.plot(temps, avg_returns, marker="o", color="tab:blue", label="Return medio")
     ax1.set_xlabel("Temperature")
-    ax1.set_ylabel("Average return", color="tab:blue")
+    ax1.set_ylabel("Return medio", color="tab:blue")
     ax1.tick_params(axis="y", labelcolor="tab:blue")
     ax1.grid(alpha=0.3)
 
     ax2 = ax1.twinx()
-    ax2.plot(temps, success_rates, marker="s", color="tab:green", label="Success rate")
-    ax2.set_ylabel("Success rate >= 200 (%)", color="tab:green")
+    ax2.plot(temps, success_rates, marker="s", color="tab:green", label="Percentuale di successo")
+    ax2.set_ylabel("Percentuale di successo >= 200 (%)", color="tab:green")
     ax2.tick_params(axis="y", labelcolor="tab:green")
 
     plt.title("LunarLander-v3 - temperature sweep")
@@ -967,18 +993,18 @@ def plot_temperature_sweep(temperature_results: list[dict[str, Any]]) -> None:
 
 
 def print_training_scope(ll_config: dict[str, Any], selected_experiments: list[str]) -> None:
-    """Print how much training each selected preset performs.
+    """Stampa il budget di training di ogni preset selezionato.
 
-    Args:
-        ll_config: LunarLander A2C config section.
-        selected_experiments: Presets selected for training/evaluation.
+    Argomenti:
+        ll_config: Sezione A2C LunarLander della configurazione.
+        selected_experiments: Preset selezionati per training e valutazione.
 
-    What it does:
-        Makes the training budget explicit: timesteps, vector envs, rollout
-        steps, optimizer and checkpoint name.
+    Operazione:
+        Esplicita il budget: timestep, ambienti vettoriali, step di rollout,
+        ottimizzatore e nome del checkpoint.
 
-    Outputs:
-        None. Prints a table-like summary.
+    Output:
+        Nessuno; stampa un riepilogo tabellare.
     """
 
     print("Training budget for selected presets:")

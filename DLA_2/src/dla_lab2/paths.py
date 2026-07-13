@@ -7,10 +7,10 @@ def project_root() -> Path:
     """
     Trova la root del laboratorio Lab 2.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         Path assoluto della cartella `DLA_2`.
     """
     return Path(__file__).resolve().parents[2]
@@ -20,10 +20,10 @@ def artifacts_dir() -> Path:
     """
     Restituisce la cartella degli artefatti generati.
 
-    Args:
+    Argomenti:
         Nessun argomento.
 
-    Returns:
+    Restituisce:
         Path della cartella `artifacts`, creata se non esiste.
     """
     path = project_root() / "artifacts"
@@ -35,10 +35,10 @@ def output_dir(name: str) -> Path:
     """
     Costruisce una sottocartella di output per un esperimento.
 
-    Args:
+    Argomenti:
         name: Nome breve dell'esperimento.
 
-    Returns:
+    Restituisce:
         Path della cartella `artifacts/name`, creata se non esiste.
     """
     path = artifacts_dir() / name

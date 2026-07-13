@@ -7,17 +7,17 @@ import torch
 
 
 def summarize_checkpoint(path: Path) -> dict:
-    """Load a checkpoint and return a lightweight summary.
+    """Carica un checkpoint e ne restituisce un riepilogo leggero.
 
-    Args:
-        path: Path to a `.pt` or `.pth` file.
+    Argomenti:
+        path: Percorso di un file `.pt` o `.pth`.
 
-    What it does:
-        Loads the checkpoint on CPU and reports whether it looks like a raw
-        state dict or a dictionary with metadata.
+    Operazione:
+        Carica il checkpoint su CPU e distingue uno state dict grezzo da un
+        dizionario con metadati. Il file viene soltanto letto.
 
-    Outputs:
-        Dictionary with checkpoint path, top-level keys and tensor count.
+    Output:
+        Dizionario con percorso, chiavi di primo livello e numero di tensori.
     """
 
     checkpoint = torch.load(path, map_location="cpu")
@@ -37,24 +37,24 @@ def summarize_checkpoint(path: Path) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Inspect old DLA Lab 3 checkpoints.")
+    parser = argparse.ArgumentParser(description="Ispeziona i vecchi checkpoint di DLA Lab 3.")
     parser.add_argument(
         "--checkpoint-dir",
         type=Path,
         default=Path(__file__).resolve().parents[1] / "checkpoints",
-        help="Directory containing checkpoints to inspect.",
+        help="Directory contenente i checkpoint da ispezionare.",
     )
     args = parser.parse_args()
 
     checkpoint_dir = args.checkpoint_dir.expanduser()
     if not checkpoint_dir.exists():
-        raise FileNotFoundError(f"Checkpoint directory not found: {checkpoint_dir}")
+        raise FileNotFoundError(f"Directory dei checkpoint non trovata: {checkpoint_dir}")
 
     checkpoint_paths = sorted(
         list(checkpoint_dir.rglob("*.pt")) + list(checkpoint_dir.rglob("*.pth"))
     )
     if not checkpoint_paths:
-        print(f"No .pt or .pth files found under {checkpoint_dir}")
+        print(f"Nessun file .pt o .pth trovato in {checkpoint_dir}")
         return
 
     print(f"Found {len(checkpoint_paths)} checkpoint files under {checkpoint_dir}")
@@ -63,9 +63,9 @@ def main() -> None:
             summary = summarize_checkpoint(path)
             print()
             print(summary["path"])
-            print(f"  type: {summary['type']}")
-            print(f"  keys: {summary['top_level_keys']}")
-            print(f"  tensor_count: {summary['tensor_count']}")
+            print(f"  tipo: {summary['type']}")
+            print(f"  chiavi: {summary['top_level_keys']}")
+            print(f"  numero di tensori: {summary['tensor_count']}")
         except Exception as exc:
             print()
             print(path)

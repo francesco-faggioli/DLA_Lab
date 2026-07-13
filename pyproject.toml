@@ -1,3 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dla-lab"
+version = "0.1.0"
+description = "Package locali riutilizzabili per i tre laboratori DLA"
+requires-python = ">=3.11,<3.14"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["DLA_1/src", "DLA_2/src", "DLA_3/src"]
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]

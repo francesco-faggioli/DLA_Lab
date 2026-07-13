@@ -14,10 +14,10 @@ def load_config(path: str | Path) -> dict[str, Any]:
     Lo usiamo per non scrivere path, batch size, seed e iperparametri
     direttamente nelle celle del notebook.
 
-    Args:
+    Argomenti:
         path: Percorso del file `config.yaml`.
 
-    Returns:
+    Restituisce:
         Dizionario Python con tutte le sezioni della configurazione.
     """
     with Path(path).open("r", encoding="utf-8") as f:
@@ -34,11 +34,11 @@ def merge_dicts(base: dict[str, Any], override: dict[str, Any] | None) -> dict[s
     E' utile quando un esperimento modifica solo alcuni valori rispetto
     alla configurazione generale.
 
-    Args:
+    Argomenti:
         base: Configurazione di partenza.
         override: Valori da sovrascrivere o aggiungere.
 
-    Returns:
+    Restituisce:
         Nuovo dizionario ottenuto applicando `override` a `base` in modo ricorsivo.
     """
     result = deepcopy(base)
@@ -60,11 +60,11 @@ def experiment_config(config: dict[str, Any], name: str) -> dict[str, Any]:
     Prende i valori globali e li aggiorna con quelli specifici
     dell'esperimento scelto.
 
-    Args:
+    Argomenti:
         config: Configurazione generale caricata da YAML.
         name: Nome dell'esperimento nella sezione `experiments`.
 
-    Returns:
+    Restituisce:
         Configurazione completa della run, con model/training gia' risolti.
     """
     experiments = config.get("experiments", {})

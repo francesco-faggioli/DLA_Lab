@@ -10,29 +10,28 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-
 BaselineMode = Literal["none", "standardize"]
 ActionMode = Literal["sample", "greedy"]
 
 
 @dataclass
 class Episode:
-    """Container returned by one environment rollout.
+    """Contenitore restituito da un rollout dell'ambiente.
 
-    Args:
-        observations: Normalized observations visited during the episode.
-        actions: Integer actions selected by the policy.
-        log_probs: Log probabilities of the selected actions.
-        rewards: Raw rewards returned by the environment.
-        total_reward: Sum of raw rewards in the episode.
-        length: Number of environment steps in the episode.
+    Argomenti:
+        observations: Osservazioni normalizzate visitate durante l'episodio.
+        actions: Azioni intere selezionate dalla policy.
+        log_probs: Log-probabilità delle azioni selezionate.
+        rewards: Reward grezzi restituiti dall'ambiente.
+        total_reward: Somma dei reward grezzi nell'episodio.
+        length: Numero di step dell'ambiente nell'episodio.
 
-    What it does:
-        Stores all data needed by REINFORCE plus human-readable episode
-        statistics.
+    Operazione:
+        Memorizza i dati necessari a REINFORCE e statistiche di episodio
+        leggibili.
 
-    Outputs:
-        Dataclass instance used by training and evaluation functions.
+    Output:
+        Istanza dataclass usata da training e valutazione.
     """
 
     observations: list[torch.Tensor]
@@ -45,28 +44,28 @@ class Episode:
 
 @dataclass
 class ReinforceConfig:
-    """Training configuration for REINFORCE experiments.
+    """Configurazione di training per gli esperimenti REINFORCE.
 
-    Args:
-        gamma: Discount factor for Monte Carlo returns.
-        lr_policy: Adam learning rate for the policy network.
-        lr_value: Adam learning rate for the value network when used.
-        num_episodes: Number of training episodes.
-        max_episode_steps: Safety cap for each episode.
-        eval_every: Evaluate every N training episodes.
-        eval_episodes: Run M evaluation episodes at each evaluation point.
-        baseline_mode: `none` or `standardize` for vanilla REINFORCE.
-        normalize_advantage: Normalize advantages in value-baseline training.
-        entropy_coef: Entropy bonus coefficient for exploration.
-        grad_clip: Maximum gradient norm.
-        checkpoint_path: Optional path used to save the best evaluated policy.
-        save_best: If True, save the best evaluated policy.
+    Argomenti:
+        gamma: Fattore di sconto dei return Monte Carlo.
+        lr_policy: Learning rate Adam della rete di policy.
+        lr_value: Learning rate Adam della rete di valore, se usata.
+        num_episodes: Numero di episodi di training.
+        max_episode_steps: Limite di sicurezza per ciascun episodio.
+        eval_every: Valuta ogni N episodi di training.
+        eval_episodes: Esegue M episodi a ogni punto di valutazione.
+        baseline_mode: `none` o `standardize` per REINFORCE standard.
+        normalize_advantage: Normalizza gli advantage nel training con value baseline.
+        entropy_coef: Coefficiente del bonus di entropia per l'esplorazione.
+        grad_clip: Norma massima del gradiente.
+        checkpoint_path: Percorso opzionale per salvare la miglior policy valutata.
+        save_best: Se True, salva la miglior policy valutata.
 
-    What it does:
-        Keeps hyperparameters explicit and reproducible across notebook cells.
+    Operazione:
+        Mantiene gli iperparametri espliciti e riproducibili tra le celle.
 
-    Outputs:
-        Dataclass instance passed to training functions.
+    Output:
+        Istanza dataclass passata alle funzioni di training.
     """
 
     gamma: float = 0.99
@@ -85,22 +84,22 @@ class ReinforceConfig:
 
 
 class PolicyNet(nn.Module):
-    """MLP stochastic policy for continuous observations and discrete actions."""
+    """Policy MLP stocastica per osservazioni continue e azioni discrete."""
 
     def __init__(self, obs_dim: int, n_actions: int, hidden_size: int = 128):
-        """Create the policy network.
+        """Crea la rete della policy.
 
-        Args:
-            obs_dim: Number of observation features.
-            n_actions: Number of discrete actions.
-            hidden_size: Width of the hidden layers.
+        Argomenti:
+            obs_dim: Numero di feature dell'osservazione.
+            n_actions: Numero di azioni discrete.
+            hidden_size: Ampiezza dei layer nascosti.
 
-        What it does:
-            Builds a two-layer MLP and maps observations to action logits.
+        Operazione:
+            Costruisce un MLP a due layer e mappa le osservazioni nei logit delle azioni.
 
-        Outputs:
-            A PyTorch module. `forward` returns logits; `action_probs` returns
-            normalized action probabilities.
+        Output:
+            Modulo PyTorch: `forward` restituisce logit e `action_probs`
+            probabilità normalizzate delle azioni.
         """
 
         super().__init__()
@@ -113,35 +112,35 @@ class PolicyNet(nn.Module):
         )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        """Compute action logits.
+        """Calcola i logit delle azioni.
 
-        Args:
-            obs: Normalized observation tensor. Shape can be `(obs_dim,)` or
+        Argomenti:
+            obs: Tensore dell'osservazione normalizzata. La forma può essere `(obs_dim,)` oppure
                 `(batch, obs_dim)`.
 
-        What it does:
-            Runs the observation through the MLP policy.
+        Operazione:
+            Propaga l'osservazione nella policy MLP.
 
-        Outputs:
-            Raw action logits. A categorical distribution can be built directly
-            from these logits.
+        Output:
+            Logit grezzi delle azioni, utilizzabili direttamente per costruire una
+            distribuzione categorica.
         """
 
         return self.net(obs)
 
     def action_probs(self, obs: torch.Tensor, temperature: float = 1.0) -> torch.Tensor:
-        """Compute normalized action probabilities.
+        """Calcola le probabilità normalizzate delle azioni.
 
-        Args:
-            obs: Normalized observation tensor.
-            temperature: Softmax temperature; lower values make the policy more
-                deterministic.
+        Argomenti:
+            obs: Tensore dell'osservazione normalizzata.
+            temperature: Temperatura softmax; valori inferiori rendono la policy più
+                deterministica.
 
-        What it does:
-            Converts logits into a probability distribution over actions.
+        Operazione:
+            Converte i logit in una distribuzione di probabilità sulle azioni.
 
-        Outputs:
-            Tensor of action probabilities with the same leading shape as
+        Output:
+            Tensore delle probabilità con la stessa forma iniziale di
             `obs`.
         """
 
@@ -150,20 +149,20 @@ class PolicyNet(nn.Module):
 
 
 class ValueNet(nn.Module):
-    """MLP state-value baseline network."""
+    """Rete MLP per la baseline del valore di stato."""
 
     def __init__(self, obs_dim: int, hidden_size: int = 128):
-        """Create the value network.
+        """Crea la rete di valore.
 
-        Args:
-            obs_dim: Number of observation features.
-            hidden_size: Width of the hidden layers.
+        Argomenti:
+            obs_dim: Numero di feature dell'osservazione.
+            hidden_size: Ampiezza dei layer nascosti.
 
-        What it does:
-            Builds a two-layer MLP that estimates the scalar value V(s).
+        Operazione:
+            Costruisce un MLP a due layer che stima il valore scalare V(s).
 
-        Outputs:
-            A PyTorch module whose `forward` returns one value per observation.
+        Output:
+            Modulo PyTorch il cui `forward` restituisce un valore per osservazione.
         """
 
         super().__init__()
@@ -176,69 +175,69 @@ class ValueNet(nn.Module):
         )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        """Estimate state value V(s).
+        """Stima il valore di stato V(s).
 
-        Args:
-            obs: Normalized observation tensor. Shape can be `(obs_dim,)` or
+        Argomenti:
+            obs: Tensore dell'osservazione normalizzata. La forma può essere `(obs_dim,)` oppure
                 `(batch, obs_dim)`.
 
-        What it does:
-            Runs observations through the value MLP and removes the last
-            singleton dimension.
+        Operazione:
+            Propaga le osservazioni nella rete di valore e rimuove l'ultima
+            dimensione singleton.
 
-        Outputs:
-            Scalar value for one observation or a vector of values for a batch.
+        Output:
+            Valore scalare per un'osservazione o vettore di valori per un batch.
         """
 
         return self.net(obs).squeeze(-1)
 
 
 def policy_from_env(env, hidden_size: int = 128) -> PolicyNet:
-    """Build a policy network from a Gymnasium environment.
+    """Costruisce una rete di policy da un ambiente Gymnasium.
 
-    Args:
-        env: Environment with Box observation space and Discrete action space.
-        hidden_size: Width of the hidden layers.
+    Argomenti:
+        env: Ambiente con osservazioni Box e azioni Discrete.
+        hidden_size: Ampiezza dei layer nascosti.
 
-    What it does:
-        Reads observation and action dimensions from the environment.
+    Operazione:
+        Legge dall'ambiente le dimensioni di osservazioni e azioni.
 
-    Outputs:
-        PolicyNet configured for the environment.
+    Output:
+        `PolicyNet` configurata per l'ambiente.
     """
 
     return PolicyNet(env.observation_space.shape[0], env.action_space.n, hidden_size)
 
 
 def value_from_env(env, hidden_size: int = 128) -> ValueNet:
-    """Build a value network from a Gymnasium environment.
+    """Costruisce una rete di valore da un ambiente Gymnasium.
 
-    Args:
-        env: Environment with Box observation space.
-        hidden_size: Width of the hidden layers.
+    Argomenti:
+        env: Ambiente con spazio delle osservazioni Box.
+        hidden_size: Ampiezza dei layer nascosti.
 
-    What it does:
-        Reads the observation dimension from the environment.
+    Operazione:
+        Legge dall'ambiente la dimensione delle osservazioni.
 
-    Outputs:
-        ValueNet configured for the environment.
+    Output:
+        `ValueNet` configurata per l'ambiente.
     """
 
     return ValueNet(env.observation_space.shape[0], hidden_size)
 
 
 def preprocess_observation(obs, obs_scale: torch.Tensor) -> torch.Tensor:
-    """Convert one observation to a normalized float tensor.
+    """Converte un'osservazione in un tensore float normalizzato.
 
-    Args:
-        obs: Raw observation returned by Gymnasium.
-        obs_scale: Per-feature scale tensor.
+    Argomenti:
+        obs: Osservazione grezza restituita da Gymnasium.
+        obs_scale: Tensore di scala per feature.
 
-    What it does:
-        Converts the observation to float32 and divides by the scale tensor.
+    Operazione:
+        Converte l'osservazione in float32 e la divide per il tensore di scala.
 
-    Outputs:
-        Normalized observation tensor.
+    Output:
+        Tensore dell'osservazione normalizzata.
     """
 
     return torch.as_tensor(obs, dtype=torch.float32) / obs_scale
@@ -250,22 +249,22 @@ def select_action(
     mode: ActionMode = "sample",
     temperature: float = 1.0,
 ) -> tuple[int, torch.Tensor]:
-    """Select an action from the current policy.
+    """Seleziona un'azione dalla policy corrente.
 
-    Args:
-        policy: Policy network.
-        obs: Preprocessed observation tensor.
-        mode: `sample` for stochastic training, `greedy` for evaluation.
-        temperature: Softmax temperature. Lower values make the distribution
-            sharper.
+    Argomenti:
+        policy: Rete di policy.
+        obs: Tensore dell'osservazione preprocessata.
+        mode: `sample` per training stocastico, `greedy` per valutazione.
+        temperature: Temperatura softmax; valori inferiori rendono la distribuzione
+            più concentrata.
 
-    What it does:
-        Builds a categorical distribution from policy logits and either samples
-        an action or picks the most probable action.
+    Operazione:
+        Costruisce una distribuzione categorica dai logit e campiona un'azione
+        oppure sceglie quella più probabile.
 
-    Outputs:
-        Tuple `(action, log_prob)` where `action` is an int and `log_prob` is a
-        tensor used by the policy-gradient update.
+    Output:
+        Tupla `(action, log_prob)`, composta da un'azione intera e dalla
+        log-probabilità usata nell'aggiornamento policy-gradient.
     """
 
     logits = policy(obs) / temperature
@@ -286,25 +285,25 @@ def run_episode(
     temperature: float = 1.0,
     seed: int | None = None,
 ) -> Episode:
-    """Run one complete episode.
+    """Esegue un episodio completo.
 
-    Args:
-        env: Gymnasium environment.
-        policy: Policy network used to select actions.
-        obs_scale: Per-feature scale tensor for observation normalization.
-        max_steps: Safety cap on episode length.
-        mode: `sample` for training or stochastic evaluation, `greedy` for
-            deterministic evaluation.
-        temperature: Policy temperature used by the categorical distribution.
-        seed: Optional seed passed to `env.reset`.
+    Argomenti:
+        env: Ambiente Gymnasium.
+        policy: Rete di policy usata per selezionare le azioni.
+        obs_scale: Tensore di scala per normalizzare le osservazioni.
+        max_steps: Limite di sicurezza della lunghezza dell'episodio.
+        mode: `sample` per training o valutazione stocastica, `greedy` per
+            valutazione deterministica.
+        temperature: Temperatura usata dalla distribuzione categorica.
+        seed: Seed opzionale passato a `env.reset`.
 
-    What it does:
-        Interacts with the environment until termination, truncation or
-        `max_steps`, collecting observations, actions, log probabilities and
-        rewards.
+    Operazione:
+        Interagisce con l'ambiente fino a terminazione, troncamento o
+        `max_steps`, raccogliendo osservazioni, azioni, log-probabilità e
+        reward.
 
-    Outputs:
-        Episode dataclass with rollout tensors and summary statistics.
+    Output:
+        Dataclass `Episode` con tensori del rollout e statistiche di sintesi.
     """
 
     observations: list[torch.Tensor] = []
@@ -339,17 +338,17 @@ def run_episode(
 
 
 def compute_returns(rewards: list[float], gamma: float) -> torch.Tensor:
-    """Compute discounted Monte Carlo returns.
+    """Calcola i return Monte Carlo scontati.
 
-    Args:
-        rewards: Reward sequence from one episode.
-        gamma: Discount factor.
+    Argomenti:
+        rewards: Sequenza dei reward di un episodio.
+        gamma: Fattore di sconto.
 
-    What it does:
-        Computes `G_t = r_t + gamma r_{t+1} + ...` backward through the episode.
+    Operazione:
+        Calcola a ritroso `G_t = r_t + gamma r_{t+1} + ...` nell'episodio.
 
-    Outputs:
-        Float tensor with one discounted return per timestep.
+    Output:
+        Tensore float con un return scontato per timestep.
     """
 
     returns = []
@@ -362,18 +361,18 @@ def compute_returns(rewards: list[float], gamma: float) -> torch.Tensor:
 
 
 def prepare_policy_target(returns: torch.Tensor, baseline_mode: BaselineMode) -> torch.Tensor:
-    """Apply the optional episode-level baseline to returns.
+    """Applica ai return la baseline opzionale a livello di episodio.
 
-    Args:
-        returns: Discounted returns for one episode.
-        baseline_mode: `none` keeps raw returns; `standardize` subtracts the
-            episode mean and divides by the episode standard deviation.
+    Argomenti:
+        returns: Return scontati di un episodio.
+        baseline_mode: `none` mantiene i return grezzi; `standardize` sottrae la media
+            dell'episodio e divide per la deviazione standard.
 
-    What it does:
-        Implements the simple baseline discussed in Exercise 2.
+    Operazione:
+        Implementa la baseline semplice discussa nell'Esercizio 2.
 
-    Outputs:
-        Tensor used as policy-gradient target.
+    Output:
+        Tensore usato come target policy-gradient.
     """
 
     if baseline_mode == "none":
@@ -396,24 +395,25 @@ def evaluate_policy(
     temperature: float = 1.0,
     seed_start: int | None = None,
 ) -> dict:
-    """Evaluate a policy over multiple episodes.
+    """Valuta una policy su più episodi.
 
-    Args:
-        env: Gymnasium environment.
-        policy: Policy network.
-        obs_scale: Per-feature scale tensor.
-        episodes: Number of evaluation episodes.
-        max_steps: Safety cap on each episode.
-        mode: `greedy` or `sample`.
-        temperature: Temperature used if actions are sampled.
-        seed_start: Optional first seed. Episode `i` uses `seed_start + i`.
+    Argomenti:
+        env: Ambiente Gymnasium.
+        policy: Rete di policy.
+        obs_scale: Tensore di scala per feature.
+        episodes: Numero di episodi di valutazione.
+        max_steps: Limite di sicurezza per episodio.
+        mode: `greedy` oppure `sample`.
+        temperature: Temperatura usata se le azioni vengono campionate.
+        seed_start: Primo seed opzionale; l'episodio `i` usa `seed_start + i`.
 
-    What it does:
-        Runs independent episodes without gradient tracking and summarizes total
-        rewards and episode lengths.
+    Operazione:
+        Esegue episodi indipendenti senza gradienti e riassume reward totali
+        e lunghezze.
 
-    Outputs:
-        Dictionary with mean/std/min/max return, mean length and raw arrays.
+    Output:
+        Dizionario con media, deviazione, minimo e massimo del return, lunghezza
+        media e array grezzi.
     """
 
     was_training = policy.training
@@ -467,23 +467,23 @@ def reinforce(
     obs_scale: torch.Tensor,
     config: ReinforceConfig,
 ) -> dict:
-    """Train a policy with vanilla REINFORCE.
+    """Addestra una policy con REINFORCE standard.
 
-    Args:
-        policy: Policy network to train.
-        env: Training environment.
-        eval_env: Environment used for periodic evaluation.
-        obs_scale: Per-feature scale tensor.
-        config: ReinforceConfig with hyperparameters and logging settings.
+    Argomenti:
+        policy: Rete di policy da addestrare.
+        env: Ambiente di training.
+        eval_env: Ambiente usato per la valutazione periodica.
+        obs_scale: Tensore di scala per feature.
+        config: `ReinforceConfig` con iperparametri e impostazioni di logging.
 
-    What it does:
-        Runs one sampled episode per update, computes Monte Carlo returns,
-        applies the optional standardization baseline, updates the policy with
-        Adam, and periodically evaluates the greedy policy.
+    Operazione:
+        Esegue un episodio campionato per aggiornamento, calcola i return Monte Carlo,
+        applica la standardizzazione opzionale, aggiorna la policy con Adam e
+        valuta periodicamente la policy greedy.
 
-    Outputs:
-        Dictionary containing episode returns, losses, evaluation metrics and
-        best checkpoint information.
+    Output:
+        Dizionario con return per episodio, loss, metriche di valutazione e
+        informazioni sul checkpoint migliore.
     """
 
     optimizer = torch.optim.Adam(policy.parameters(), lr=config.lr_policy)
@@ -570,23 +570,23 @@ def reinforce_with_value_baseline(
     obs_scale: torch.Tensor,
     config: ReinforceConfig,
 ) -> dict:
-    """Train REINFORCE with a learned state-value baseline.
+    """Addestra REINFORCE con una baseline di valore appresa.
 
-    Args:
-        policy: Policy network to train.
-        value_net: Value network trained to estimate discounted returns.
-        env: Training environment.
-        eval_env: Environment used for periodic evaluation.
-        obs_scale: Per-feature scale tensor.
-        config: ReinforceConfig with hyperparameters and logging settings.
+    Argomenti:
+        policy: Rete di policy da addestrare.
+        value_net: Rete di valore addestrata a stimare i return scontati.
+        env: Ambiente di training.
+        eval_env: Ambiente usato per la valutazione periodica.
+        obs_scale: Tensore di scala per feature.
+        config: `ReinforceConfig` con iperparametri e impostazioni di logging.
 
-    What it does:
-        Uses `G_t - V(s_t)` as the policy advantage and trains the value network
-        with mean squared error against Monte Carlo returns.
+    Operazione:
+        Usa `G_t - V(s_t)` come advantage e addestra la rete di valore
+        con errore quadratico medio sui return Monte Carlo.
 
-    Outputs:
-        Dictionary containing training curves, evaluation metrics and checkpoint
-        information.
+    Output:
+        Dizionario con curve di training, metriche di valutazione e informazioni
+        sui checkpoint.
     """
 
     opt_policy = torch.optim.Adam(policy.parameters(), lr=config.lr_policy)
@@ -630,7 +630,9 @@ def reinforce_with_value_baseline(
         dist = Categorical(logits=logits)
         entropy = dist.entropy().mean()
 
-        policy_loss = -(episode.log_probs * advantage.detach()).mean() - config.entropy_coef * entropy
+        policy_loss = (
+            -(episode.log_probs * advantage.detach()).mean() - config.entropy_coef * entropy
+        )
         value_loss = F.mse_loss(values, returns)
 
         opt_policy.zero_grad()

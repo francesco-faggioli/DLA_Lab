@@ -1,5 +1,5 @@
-# Lab 2 result evidence
+# Evidenze dei risultati del Lab 2
 
-The CSV files in this directory are transcriptions of executed notebook outputs. They separate the Rotten Tomatoes sentiment task from the ImageNet-Sketch CLIP task and preserve the source cell for every result.
+I file CSV in questa directory trascrivono gli output dei notebook eseguiti. Separano il compito di sentiment su Rotten Tomatoes da quello CLIP su ImageNet-Sketch e conservano la cella sorgente di ogni risultato.
 
-No confusion matrix or per-example prediction file was saved in the final notebooks; therefore no confusion matrix is reconstructed for the report.
+Nei notebook finali non è stato salvato alcun file con confusion matrix o predizioni per esempio; la relazione non ricostruisce quindi artificialmente una matrice di confusione.
