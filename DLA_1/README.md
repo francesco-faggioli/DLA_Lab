@@ -214,9 +214,8 @@ La precision diminuisce al crescere di K perché nel ranking entrano più vicini
 
 - È riportato un solo seed principale; non è stata misurata la variabilità su training seed indipendenti.
 - Lo split di training nativo da 26,640 immagini osservato da Torchvision costituisce la base sperimentale consegnata; non sono state unite altre distribuzioni di GTSRB.
-- I limiti hardware hanno favorito input `64 × 64` e ridotto il budget sperimentale.
-- La confusion matrix finale e le predizioni per campione non sono state salvate.
-- Log W&B grezzi e checkpoint restano locali, quindi riepiloghi versionati e output dei notebook costituiscono l'evidenza pubblica.
+- I limiti hardware hanno favorito input `64 × 64` e ridotto il budget sperimentale
+- Log W&B grezzi e checkpoint restano locali.
 
 ## Riproducibilità
 
