@@ -25,51 +25,74 @@ I due gruppi di accuracy sono riportati separatamente perché appartengono a dat
 
 ## Fondamenti teorici
 
-DistilBERT trasforma il testo tokenizzato in hidden state contestuali. Per la classificazione end-to-end, i logit $z_c$ della testa sono trasformati in probabilità mediante
+DistilBERT trasforma il testo tokenizzato in hidden state contestuali. Nella classificazione end-to-end, `AutoModelForSequenceClassification` applica una testa a due classi e calcola la cross-entropy quando `Trainer` riceve le label. Softmax e cross-entropy sono già spiegate nel DLA 1; qui è più utile concentrarsi sui meccanismi specifici di adattamento. La baseline SVM usa invece il vettore `[CLS]` congelato.
 
-$$
-p(y=c\mid x)=\frac{\exp(z_c)}{\sum_{j=1}^{C}\exp(z_j)},
-\qquad
-\mathcal{L}_{\mathrm{CE}}=-\frac{1}{N}\sum_{i=1}^{N}\log p(y_i\mid x_i).
-$$
+LoRA mantiene congelata una matrice pre-addestrata e apprende un aggiornamento a basso rango:
 
-$C=2$ è il numero di classi sentiment e $N$ la dimensione del batch. La classe scelta è quella con probabilità massima; la cross-entropy penalizza una bassa probabilità della label corretta. `AutoModelForSequenceClassification` restituisce questa loss quando `Trainer` riceve le label, mentre `compute_sklearn_metrics` calcola le metriche sulle predizioni finali. La baseline SVM usa invece il vettore `[CLS]` congelato e non questa softmax.
+```math
+W' = W + \frac{\alpha}{r}BA
+```
 
-LoRA mantiene congelata una matrice pre-addestrata $W\in\mathbb{R}^{k\times d}$ e apprende un aggiornamento a basso rango:
+dove:
 
-$$
-W'=W+\frac{\alpha}{r}BA,
-\qquad
-A\in\mathbb{R}^{r\times d},
-\quad
-B\in\mathbb{R}^{k\times r}.
-$$
+- $W$ è la matrice pre-addestrata mantenuta congelata;
+- $W'$ è la matrice effettivamente usata dopo l'adattamento;
+- $A$ e $B$ sono le matrici addestrabili a basso rango;
+- $r$ è il rank LoRA;
+- $\alpha$ controlla la scala dell'aggiornamento.
 
-Con $r\ll\min(d,k)$ si aggiornano molte meno variabili. `lora_sequence_classifier_init` configura PEFT con `r=8`, `lora_alpha=16`, dropout `0.1`, bias disattivato e target `q_lin`/`v_lin`. La quota riportata è calcolata da `count_parameters`:
+L'aggiornamento modifica il comportamento del layer ottimizzando molte meno variabili rispetto al fine-tuning completo. `lora_sequence_classifier_init` configura PEFT con rank `8`, `lora_alpha=16`, dropout `0.1`, bias disattivato e target `q_lin`/`v_lin`.
 
-$$
-\text{Trainable \%}=100\,\frac{N_{\mathrm{trainable}}}{N_{\mathrm{total}}}=1.09\%.
-$$
+La quota di parametri aggiornata è
 
-Nel congelamento parziale, $\theta=\theta_{\mathrm{frozen}}\cup\theta_{\mathrm{trainable}}$ e $\nabla_{\theta_{\mathrm{frozen}}}\mathcal{L}=0$: `requires_grad=False` è applicato agli embedding e ai primi quattro blocchi, mentre gli altri parametri vengono ottimizzati.
+```math
+\text{Parametri addestrabili (\%)}
+=
+100\,\frac{N_{\mathrm{addestrabili}}}{N_{\mathrm{totali}}}
+```
+
+dove:
+
+- $N_{\mathrm{addestrabili}}$ è il numero di parametri con `requires_grad=True`;
+- $N_{\mathrm{totali}}$ è il numero complessivo di parametri del modello.
+
+La percentuale quantifica direttamente quanto LoRA riduca i pesi ottimizzati; `count_parameters` calcola entrambi i conteggi con `numel()`. Nell'esperimento eseguito la quota è circa l'1,09%.
+
+Nel congelamento parziale, `requires_grad=False` è applicato agli embedding e ai primi quattro blocchi, mentre gli altri parametri vengono ottimizzati. La descrizione testuale è sufficiente perché il meccanismo coincide direttamente con l'attivazione o disattivazione del gradiente.
 
 CLIP confronta embedding immagine e testo normalizzati:
 
-$$
-s(x,t)=\frac{f_I(x)^\top f_T(t)}{\lVert f_I(x)\rVert_2\lVert f_T(t)\rVert_2},
-\qquad
-\ell_{x,t}=\exp(\tau)\,\hat f_I(x)^\top\hat f_T(t).
-$$
+```math
+\operatorname{cos}\!\left(f_I(x),f_T(t)\right)
+=
+\frac{f_I(x)^\top f_T(t)}
+{\lVert f_I(x)\rVert_2\lVert f_T(t)\rVert_2}
+```
 
-$f_I$ e $f_T$ sono gli encoder congelati, mentre `model.logit_scale.exp()` fornisce $\exp(\tau)$. `evaluate_zero_shot` e `evaluate_precomputed_features` implementano esattamente normalizzazione, prodotto matriciale e scala dei logit.
+dove:
+
+- $x$ è un'immagine e $t$ è un prompt testuale di classe;
+- $f_I(x)$ è l'embedding prodotto dall'encoder di immagini;
+- $f_T(t)$ è l'embedding prodotto dall'encoder di testo;
+- il prodotto scalare al numeratore è normalizzato dalle due norme euclidee.
+
+Valori più alti indicano maggiore compatibilità tra immagine e testo. `evaluate_zero_shot` ed `evaluate_precomputed_features` normalizzano gli embedding, calcolano il prodotto matriciale e applicano poi la scala dei logit fornita da `model.logit_scale.exp()`.
 
 L'adapter applicato alle feature immagine è
 
-$$
+```math
 h'=h+\sigma(\alpha)\,W_{\mathrm{up}}\operatorname{ReLU}(W_{\mathrm{down}}h).
-$$
+```
 
-Il collegamento residuo conserva la feature originale; $W_{\mathrm{down}}$ riduce la dimensione nel bottleneck e $W_{\mathrm{up}}$ la ripristina. Questa è la `CLIPAdapter.forward` effettiva: usa ReLU, un gate `sigmoid` addestrabile e bottleneck 64 o 128. Il risultato migliore usa 128, adattando un piccolo MLP senza aggiornare gli encoder CLIP. I notebook tecnici forniscono le derivazioni operative e i conteggi osservati.
+dove:
+
+- $h$ è la feature immagine prodotta da CLIP e $h'$ quella adattata;
+- $W_{\mathrm{down}}$ riduce la dimensione nel bottleneck;
+- $W_{\mathrm{up}}$ ripristina la dimensione originale;
+- $\operatorname{ReLU}$ introduce la non linearità;
+- $\sigma(\alpha)$ è il gate sigmoid addestrabile del ramo residuo.
+
+Il collegamento residuo conserva la feature originale e aggiunge una correzione leggera. `CLIPAdapter.forward` implementa esattamente questa struttura; il risultato migliore usa bottleneck 128 senza aggiornare gli encoder CLIP.
 
 ## Parte I — Analisi del sentiment su Rotten Tomatoes
 

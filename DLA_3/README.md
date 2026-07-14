@@ -23,83 +23,90 @@ Questo è l'unico laboratorio di Deep Reinforcement Learning del portfolio. Impl
 
 Per una traiettoria di durata $T$, il return Monte Carlo dal tempo $t$ è
 
-$$
+```math
 G_t=\sum_{k=0}^{T-t-1}\gamma^k r_{t+k}.
-$$
+```
 
-$r_{t+k}$ è la ricompensa futura e $\gamma$ il fattore di sconto. `compute_returns` in [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) implementa la stessa ricorrenza a ritroso. REINFORCE minimizza la media negativa del policy gradient e sottrae il bonus di entropia:
+dove:
 
-$$
+- $G_t$ è il return osservato dal passo $t$;
+- $T$ è la durata della traiettoria;
+- $r_{t+k}$ è la ricompensa ricevuta $k$ passi dopo $t$;
+- $\gamma$ è il fattore di sconto delle ricompense future.
+
+Il return assegna più o meno importanza alle ricompense lontane in base a $\gamma$. `compute_returns` in [`policy_gradient.py`](src/dla_lab3/policy_gradient.py) implementa lo stesso calcolo procedendo a ritroso nell'episodio.
+
+REINFORCE minimizza la media negativa del policy gradient e sottrae il bonus di entropia:
+
+```math
 \mathcal{L}_{\mathrm{REINFORCE}}
 =-\frac{1}{T}\sum_t \widetilde G_t\log\pi_\theta(a_t\mid s_t)
--\beta\,\frac{1}{T}\sum_t\mathcal{H}(\pi_\theta(\cdot\mid s_t)),
-$$
+-\beta\,\overline{\mathcal{H}}
+```
 
-$$
-\mathcal{H}(\pi)=-\sum_a\pi(a\mid s)\log\pi(a\mid s).
-$$
+dove:
 
-$\widetilde G_t$ è $G_t$ grezzo oppure il return standardizzato $(G_t-\mu_G)/(s_G+10^{-8})$; `prepare_policy_target` usa la deviazione campionaria predefinita di `torch.std`. L'entropia premia policy meno concentrate durante il training.
+- $T$ è il numero di passi dell'episodio;
+- $\widetilde G_t$ è il return grezzo oppure standardizzato;
+- $\pi_\theta(a_t\mid s_t)$ è la probabilità assegnata all'azione eseguita nello stato corrente;
+- $\theta$ rappresenta i parametri della policy;
+- $\beta$ è il coefficiente di entropia;
+- $\overline{\mathcal H}$ è l'entropia media della policy nell'episodio.
 
-Con la baseline appresa, l'advantage e le loss effettive sono
+Il primo termine rinforza le azioni associate a return elevati, mentre l'entropia evita una policy prematuramente troppo concentrata. `reinforce` implementa entrambi i termini; `prepare_policy_target` può standardizzare il return usando la deviazione campionaria di `torch.std`.
 
-$$
+Con la baseline appresa, l'advantage è
+
+```math
 A_t=G_t-V_\phi(s_t),
-$$
+```
 
-$$
-\mathcal{L}_{\mathrm{policy}}
-=-\frac{1}{T}\sum_t A_t\log\pi_\theta(a_t\mid s_t)-\beta\,\overline{\mathcal H},
-\qquad
-\mathcal{L}_{\mathrm{value}}
-=\frac{1}{T}\sum_t\left(G_t-V_\phi(s_t)\right)^2.
-$$
+dove:
 
-La baseline riduce la varianza senza sostituire il return; `reinforce_with_value_baseline` stacca l'advantage dal grafo della rete di valore, può standardizzarlo e usa `F.mse_loss` per il critic.
+- $G_t$ è il return osservato dal passo $t$;
+- $V_\phi(s_t)$ è il valore stimato dello stato dalla rete con parametri $\phi$;
+- $A_t$ misura quanto l'esito sia migliore o peggiore rispetto alla previsione della rete di valore.
 
-A2C usa la Generalized Advantage Estimation. Con maschera di continuazione $m_t$:
+La baseline riduce la variabilità dell'aggiornamento della policy senza cambiare il target Monte Carlo. `reinforce_with_value_baseline` stacca l'advantage dal grafo della rete di valore, può standardizzarlo e addestra il critic con `F.mse_loss`.
 
-$$
-\delta_t=r_t+\gamma m_tV_\phi(s_{t+1})-V_\phi(s_t),
-\qquad
-A_t=\delta_t+\gamma\lambda m_tA_{t+1},
-\qquad
-R_t^{\mathrm{target}}=A_t+V_\phi(s_t).
-$$
-
-`compute_gae` implementa queste ricorrenze. Nel training single-environment $m_t=0$ solo per `terminated`, quindi un episodio `truncated` mantiene il bootstrap; nel training vettorizzato corrente la maschera usa `terminated OR truncated`. Questa differenza implementativa è dichiarata invece di attribuire al codice una gestione ideale non presente.
+A2C usa `compute_gae` per costruire ricorsivamente advantage e target del critic. Nel training single-environment la maschera annulla il bootstrap soltanto per `terminated`, mentre nel training vettorizzato usa `terminated OR truncated`; la descrizione segue questa differenza reale senza introdurre una formula TD generica.
 
 La loss A2C effettiva è
 
-$$
+```math
 \mathcal{L}_{\mathrm{A2C}}
-=\underbrace{-\overline{\log\pi_\theta(a_t\mid s_t)A_t}-c_e\overline{\mathcal H}}_{\mathcal{L}_{\mathrm{actor}}}
-+c_v\underbrace{\operatorname{SmoothL1}\!\left(V_\phi(s_t),R_t^{\mathrm{target}}\right)}_{\mathcal{L}_{\mathrm{critic}}}.
-$$
+=-\overline{\log\pi_\theta(a_t\mid s_t)A_t}
+-c_e\overline{\mathcal H}
++c_v\operatorname{SmoothL1}\!\left(V_\phi(s_t),R_t^{\mathrm{target}}\right).
+```
 
-I coefficienti $c_v$ e $c_e$ sono rispettivamente `value_coef` e il coefficiente di entropia, che può decadere fino a `entropy_coef_min`. La scelta `SmoothL1`, anziché MSE, corrisponde a `train_a2c_single_env` e `train_a2c_vectorized`.
+dove:
+
+- $\pi_\theta(a_t\mid s_t)$ è la probabilità dell'azione scelta;
+- $A_t$ è l'advantage stimato da GAE;
+- $\overline{\mathcal H}$ è l'entropia media della policy;
+- $V_\phi(s_t)$ è il valore previsto dal critic;
+- $R_t^{\mathrm{target}}$ è il target costruito da `compute_gae`;
+- $c_e$ e $c_v$ pesano rispettivamente entropia e loss del critic.
+
+L'actor favorisce le azioni con advantage positivo, mentre il critic avvicina la stima di valore al target GAE. `train_a2c_single_env` e `train_a2c_vectorized` usano `F.smooth_l1_loss`; $c_v$ corrisponde a `value_coef` e $c_e$ può decadere fino a `entropy_coef_min`.
 
 Durante il temperature sweep, i logit $z_a$ producono
 
-$$
+```math
 \pi_T(a\mid s)=\frac{\exp(z_a/T)}{\sum_j\exp(z_j/T)}.
-$$
+```
 
-$T<1$ concentra la distribuzione, $T>1$ la rende più esplorativa e la modalità greedy usa direttamente l'argmax. `run_a2c_episode` applica `Categorical(logits=logits / temperature)`; la configurazione finale usa campionamento con `T=0.75`.
+dove:
 
-Le valutazioni su $N$ episodi usano la media e la deviazione standard di popolazione (`numpy.std`, `ddof=0`):
+- $z_a$ è il logit associato all'azione $a$;
+- $T$ è la temperatura;
+- $j$ indicizza tutte le azioni disponibili;
+- $\pi_T(a\mid s)$ è la probabilità di campionare l'azione $a$ nello stato $s$.
 
-$$
-\bar R=\frac{1}{N}\sum_{i=1}^{N}R_i,
-\qquad
-\sigma_R=\sqrt{\frac{1}{N}\sum_{i=1}^{N}(R_i-\bar R)^2},
-$$
+Una temperatura inferiore a uno concentra la probabilità sulle azioni con logit maggiore, mentre una temperatura superiore a uno rende il campionamento più esplorativo. `run_a2c_episode` applica `Categorical(logits=logits / temperature)`; la configurazione finale usa campionamento con $T=0.75$, mentre la modalità greedy usa direttamente l'argmax.
 
-$$
-\text{Success rate}=\frac{1}{N}\sum_{i=1}^{N}\mathbb{1}[R_i\ge 200].
-$$
-
-La soglia 200 è codificata in `evaluate_a2c_policy`; media, dispersione e successo evitano di descrivere la policy con un singolo rollout. I notebook tecnici collegano ogni formula alle celle di training o valutazione pertinenti.
+Le valutazioni multi-episodio riportano media, deviazione standard di popolazione e tasso di successo senza ulteriori formule: `evaluate_a2c_policy` usa `numpy.std` con `ddof=0` e considera riuscito un episodio LunarLander con return almeno 200. Queste statistiche evitano di descrivere la policy con un singolo rollout.
 
 ## Ambiente e definizione del problema
 

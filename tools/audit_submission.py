@@ -421,27 +421,68 @@ def _markdown_text(path: Path) -> str:
 
 
 def markdown_latex_checks(files: list[Path]) -> list[str]:
-    """Controlla delimitatori e struttura minima del LaTeX testuale."""
+    """Controlla i blocchi math GitHub e i delimitatori Jupyter."""
 
     errors: list[str] = []
     markdown_files = [path for path in files if path.suffix in {".md", ".ipynb"}]
+    expected_readme_blocks = {
+        "DLA_1/README.md": 4,
+        "DLA_2/README.md": 4,
+        "DLA_3/README.md": 5,
+    }
+
+    def check_formula(formula: str, relative: Path) -> None:
+        if not formula.strip():
+            errors.append(f"Formula display vuota in {relative}")
+        if formula.count("{") != formula.count("}"):
+            errors.append(f"Parentesi graffe LaTeX sbilanciate in {relative}")
+        if formula.count("\\left") != formula.count("\\right"):
+            errors.append(f"Coppie \\left/\\right sbilanciate in {relative}")
+        if re.search(r"(?m)^\s*={2,}\s*$", formula):
+            errors.append(f"Separatore Markdown incorporato in una formula: {relative}")
+
     for path in markdown_files:
         text = _markdown_text(path)
         relative = path.relative_to(ROOT)
+        relative_posix = relative.as_posix()
         if "\\[" in text or "\\]" in text:
-            errors.append(f"Delimitatore LaTeX non GitHub/Jupyter in {relative}: usare $$")
-        if text.count("$$") % 2:
-            errors.append(f"Numero dispari di delimitatori $$ in {relative}")
-            continue
-        for formula in re.findall(r"\$\$(.*?)\$\$", text, flags=re.DOTALL):
-            if not formula.strip():
-                errors.append(f"Formula display vuota in {relative}")
-            if formula.count("{") != formula.count("}"):
-                errors.append(f"Parentesi graffe LaTeX sbilanciate in {relative}")
-            if formula.count("\\left") != formula.count("\\right"):
-                errors.append(f"Coppie \\left/\\right sbilanciate in {relative}")
-            if re.search(r"(?m)^\s*={2,}\s*$", formula):
-                errors.append(f"Separatore Markdown incorporato in una formula: {relative}")
+            errors.append(f"Delimitatore LaTeX non supportato in {relative}")
+
+        if relative_posix in expected_readme_blocks:
+            if "$$" in text:
+                errors.append(f"Delimitatore $$ residuo nel README GitHub: {relative}")
+            openings = len(re.findall(r"(?m)^```math[ \t]*$", text))
+            matches = list(
+                re.finditer(
+                    r"(?ms)^```math[ \t]*\n(.*?)^```[ \t]*$",
+                    text,
+                )
+            )
+            if openings != len(matches):
+                errors.append(f"Blocco math non chiuso correttamente in {relative}")
+            expected = expected_readme_blocks[relative_posix]
+            if len(matches) != expected:
+                errors.append(
+                    f"Numero inatteso di blocchi math in {relative}: "
+                    f"attesi {expected}, trovati {len(matches)}"
+                )
+            for match in matches:
+                if match.start() and not text[: match.start()].endswith("\n\n"):
+                    errors.append(f"Riga vuota mancante prima di un blocco math: {relative}")
+                if match.end() < len(text) and not text[match.end() :].startswith("\n\n"):
+                    errors.append(f"Riga vuota mancante dopo un blocco math: {relative}")
+                check_formula(match.group(1), relative)
+        else:
+            if path.suffix == ".ipynb":
+                delimiters = len(re.findall(r"\$\$", text))
+                standalone = len(re.findall(r"(?m)^[ \t]*\$\$[ \t]*$", text))
+                if delimiters != standalone:
+                    errors.append(f"Delimitatore $$ non isolato su una riga in {relative}")
+            if text.count("$$") % 2:
+                errors.append(f"Numero dispari di delimitatori $$ in {relative}")
+                continue
+            for formula in re.findall(r"\$\$(.*?)\$\$", text, flags=re.DOTALL):
+                check_formula(formula, relative)
 
         prose = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
         prose = re.sub(r"`[^`\n]*`", "", prose)
@@ -502,17 +543,17 @@ def language_and_formula_checks() -> list[str]:
     required_formula_tokens = {
         "DLA_1/README.md": [
             r"\mathcal{L}_{\mathrm{CE}}",
-            r"\mathcal{L}_{\mathrm{WCE}}",
             r"\operatorname{cos}(q,x)",
             "P@K",
             r"\mu_c",
+            "class_weights_from_labels",
+            "FocalLoss",
             "nearest_mean_classifier",
         ],
         "DLA_2/README.md": [
-            r"p(y=c\mid x)",
             r"\frac{\alpha}{r}BA",
-            "Trainable \\%",
-            r"\ell_{x,t}=\exp(\tau)",
+            "Parametri addestrabili",
+            r"\operatorname{cos}",
             r"\sigma(\alpha)",
             "CLIPAdapter.forward",
         ],
@@ -520,11 +561,10 @@ def language_and_formula_checks() -> list[str]:
             r"G_t=\sum",
             r"\mathcal{L}_{\mathrm{REINFORCE}}",
             r"A_t=G_t-V_\phi",
-            r"\delta_t=r_t+\gamma",
+            r"\mathcal{L}_{\mathrm{A2C}}",
             "SmoothL1",
             r"\pi_T(a\mid s)",
             "numpy.std",
-            r"\mathbb{1}[R_i\ge 200]",
         ],
         "DLA_1/notebooks/03b_retrieval_training_free_classification.ipynb": [
             "math-dla1-retrieval",

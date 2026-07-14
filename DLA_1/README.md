@@ -29,55 +29,72 @@ Una CNN pre-addestrata può essere usata come mappa fissa $f(x)$ oppure adattata
 
 Per un batch di $N$ esempi, la loss usata dalla baseline head-only è
 
-$$
+```math
 \mathcal{L}_{\mathrm{CE}}
 =
 -\frac{1}{N}\sum_{i=1}^{N}\log p_{\theta}(y_i\mid x_i).
-$$
+```
 
-$x_i$ è l'immagine, $y_i$ la classe corretta e $p_\theta(y_i\mid x_i)$ la probabilità assegnata dal modello. Penalizzare il logaritmo della probabilità corretta rende costose le predizioni sicure ma errate. La formula corrisponde a `nn.CrossEntropyLoss` costruita da `build_loss` in [`losses.py`](src/dla_lab1/losses.py) e usata da `train_model`.
+dove:
 
-Gli screening con class imbalance usano anche pesi inversi alla frequenza. Se $n_c$ è il numero di esempi della classe $c$, $C$ il numero di classi e $N=\sum_c n_c$, il codice calcola
+- $N$ è il numero di esempi nel batch;
+- $x_i$ è l'immagine dell'esempio $i$;
+- $y_i$ è la classe corretta;
+- $p_{\theta}(y_i\mid x_i)$ è la probabilità assegnata dal modello alla classe corretta;
+- $\theta$ rappresenta i parametri del modello.
 
-$$
-w_c=\frac{N}{C\,n_c},
-\qquad
-\mathcal{L}_{\mathrm{WCE}}
-=
--\frac{1}{N}\sum_{i=1}^{N}w_{y_i}\log p_{\theta}(y_i\mid x_i).
-$$
+La loss cresce quando il modello assegna poca probabilità alla classe corretta. Nel progetto `build_loss`, definita in [`losses.py`](src/dla_lab1/losses.py), costruisce `nn.CrossEntropyLoss`, che `train_model` usa durante il fine-tuning di ResNet-18.
 
-Le classi rare ricevono quindi un peso maggiore. Il calcolo reale è in `class_weights_from_labels` (`np.bincount`, conteggio minimo pari a uno), mentre `build_loss` passa il tensore a `nn.CrossEntropyLoss`. Il miglior modello finale usa cross-entropy con label smoothing, non la variante pesata.
+Gli screening sullo sbilanciamento hanno considerato anche weighted cross-entropy e Focal Loss. La prima assegna più peso alle classi rare usando conteggi inversi alla frequenza; la seconda riduce il contributo degli esempi già classificati con sicurezza. `class_weights_from_labels` e `FocalLoss` implementano queste varianti, ma il miglior modello finale usa cross-entropy con label smoothing e non richiede ulteriori formule nella relazione sintetica.
 
 Nel retrieval, query $q$ e campione di gallery $x$ sono confrontati mediante
 
-$$
+```math
 \operatorname{cos}(q,x)
 =
 \frac{q^\top x}{\lVert q\rVert_2\lVert x\rVert_2}.
-$$
+```
 
-Dopo la normalizzazione $\hat q=q/\lVert q\rVert_2$ e $\hat x=x/\lVert x\rVert_2$, il valore coincide con $\hat q^\top\hat x$. Un valore vicino a uno indica direzioni simili indipendentemente dalla norma. `cosine_similarity_matrix` in [`features.py`](src/dla_lab1/features.py) applica `F.normalize` e il prodotto matriciale.
+dove:
+
+- $q$ è l'embedding della query;
+- $x$ è l'embedding di un campione della gallery;
+- $q^\top x$ è il prodotto scalare;
+- $\lVert q\rVert_2$ e $\lVert x\rVert_2$ sono le norme euclidee.
+
+Un valore vicino a uno indica che i due embedding hanno una direzione simile, indipendentemente dalla loro scala. `cosine_similarity_matrix` in [`features.py`](src/dla_lab1/features.py) normalizza query e gallery con `F.normalize` e calcola il prodotto matriciale.
 
 La qualità dei primi $K$ risultati è misurata da
 
-$$
+```math
 P@K
 =
 \frac{1}{K}\sum_{j=1}^{K}\mathbb{1}[y_{(j)}=y_q],
-$$
+```
 
-dove $y_q$ è la classe della query, $y_{(j)}$ quella del vicino in posizione $j$ e $\mathbb{1}$ vale uno quando le etichette coincidono. `retrieval_precision_at_k` calcola prima la precisione per query e poi la media sulle query; $P@1$ verifica il solo primo vicino, mentre valori maggiori valutano una porzione più ampia del ranking.
+dove:
+
+- $K$ è il numero di risultati considerati;
+- $y_q$ è la classe della query;
+- $y_{(j)}$ è la classe del risultato in posizione $j$;
+- $\mathbb{1}$ vale uno quando le due classi coincidono e zero altrimenti.
+
+La metrica misura la purezza dei primi risultati del ranking. `retrieval_precision_at_k` calcola il valore per ogni query e poi ne restituisce la media; $P@1$ considera soltanto il primo vicino.
 
 Il Nearest-Mean Classifier comprime infine ogni classe nel centroide
 
-$$
+```math
 \mu_c=\frac{1}{N_c}\sum_{i:y_i=c}z_i,
-\qquad
-\hat y=\arg\max_c\operatorname{cos}(z,\mu_c).
-$$
+```
 
-$z_i$ sono le feature della gallery e $N_c$ il loro numero per la classe $c$. `class_feature_centroids` usa la media aritmetica e `nearest_mean_classifier` sceglie il centroide con cosine similarity massima. Non viene addestrato un nuovo classificatore, ma una singola media può rappresentare male classi con più modalità visive. I dettagli operativi sono nel notebook [`03b_retrieval_training_free_classification.ipynb`](notebooks/03b_retrieval_training_free_classification.ipynb).
+dove:
+
+- $\mu_c$ è il centroide della classe $c$;
+- $N_c$ è il numero di elementi della classe $c$ nella gallery;
+- $z_i$ è la feature dell'elemento $i$;
+- $y_i=c$ seleziona soltanto gli elementi appartenenti alla classe considerata.
+
+Il centroide riassume una classe con la media delle sue feature. `class_feature_centroids` esegue questa media e `nearest_mean_classifier` assegna alla query la classe del centroide con similarità coseno massima, senza addestrare un nuovo classificatore.
 
 ## Dataset e analisi esplorativa
 
