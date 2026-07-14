@@ -242,11 +242,6 @@ Il comando legge evidenze versionate e output dei notebook; non addestra alcun m
 | `results/` | Evidenze pubbliche leggere |
 | `figures/` | Figure estratte o generate dalle evidenze |
 
-### Decisione sul notebook esplorativo
-
-| File | Contenuto unico | Citato nella relazione finale | Necessario per la consegna | Decisione |
-| --- | ---: | ---: | ---: | --- |
-
 ## Dipendenze principali
 
 | Libreria | Scopo | Utilizzata in |

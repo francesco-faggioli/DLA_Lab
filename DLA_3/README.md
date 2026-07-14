@@ -319,11 +319,6 @@ La configurazione centrale è [`config/lab3_defaults.yaml`](config/lab3_defaults
 | `results/` | Metriche pubbliche leggere |
 | `figures/` | Figure estratte o rigenerate dalle evidenze |
 
-### Decisione sul notebook esplorativo
-
-| File | Contenuto unico | Citato dalla relazione finale | Necessario per la consegna | Decisione |
-| --- | ---: | ---: | ---: | --- |
-
 ## Dipendenze principali
 
 | Libreria | Scopo | Utilizzata in |
