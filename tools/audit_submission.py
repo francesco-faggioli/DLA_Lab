@@ -543,7 +543,7 @@ def language_and_formula_checks() -> list[str]:
     required_formula_tokens = {
         "DLA_1/README.md": [
             r"\mathcal{L}_{\mathrm{CE}}",
-            r"\operatorname{cos}(q,x)",
+            r"\mathrm{cos}(q,x)",
             "P@K",
             r"\mu_c",
             "class_weights_from_labels",
@@ -553,7 +553,7 @@ def language_and_formula_checks() -> list[str]:
         "DLA_2/README.md": [
             r"\frac{\alpha}{r}BA",
             "Parametri addestrabili",
-            r"\operatorname{cos}",
+            r"\mathrm{cos}",
             r"\sigma(\alpha)",
             "CLIPAdapter.forward",
         ],

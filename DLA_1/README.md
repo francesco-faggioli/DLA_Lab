@@ -50,7 +50,7 @@ Gli screening sullo sbilanciamento hanno considerato anche weighted cross-entrop
 Nel retrieval, query $q$ e campione di gallery $x$ sono confrontati mediante
 
 ```math
-\operatorname{cos}(q,x)
+\mathrm{cos}(q,x)
 =
 \frac{q^\top x}{\lVert q\rVert_2\lVert x\rVert_2}.
 ```

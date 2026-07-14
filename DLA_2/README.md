@@ -63,7 +63,7 @@ Nel congelamento parziale, `requires_grad=False` è applicato agli embedding e a
 CLIP confronta embedding immagine e testo normalizzati:
 
 ```math
-\operatorname{cos}\!\left(f_I(x),f_T(t)\right)
+\mathrm{cos}\!\left(f_I(x),f_T(t)\right)
 =
 \frac{f_I(x)^\top f_T(t)}
 {\lVert f_I(x)\rVert_2\lVert f_T(t)\rVert_2}
@@ -81,7 +81,7 @@ Valori più alti indicano maggiore compatibilità tra immagine e testo. `evaluat
 L'adapter applicato alle feature immagine è
 
 ```math
-h'=h+\sigma(\alpha)\,W_{\mathrm{up}}\operatorname{ReLU}(W_{\mathrm{down}}h).
+h'=h+\sigma(\alpha)\,W_{\mathrm{up}}\mathrm{ReLU}(W_{\mathrm{down}}h).
 ```
 
 dove:
@@ -89,7 +89,7 @@ dove:
 - $h$ è la feature immagine prodotta da CLIP e $h'$ quella adattata;
 - $W_{\mathrm{down}}$ riduce la dimensione nel bottleneck;
 - $W_{\mathrm{up}}$ ripristina la dimensione originale;
-- $\operatorname{ReLU}$ introduce la non linearità;
+- $\mathrm{ReLU}$ introduce la non linearità;
 - $\sigma(\alpha)$ è il gate sigmoid addestrabile del ramo residuo.
 
 Il collegamento residuo conserva la feature originale e aggiunge una correzione leggera. `CLIPAdapter.forward` implementa esattamente questa struttura; il risultato migliore usa bottleneck 128 senza aggiornare gli encoder CLIP.

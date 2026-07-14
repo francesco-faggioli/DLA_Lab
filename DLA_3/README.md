@@ -77,7 +77,7 @@ La loss A2C effettiva è
 \mathcal{L}_{\mathrm{A2C}}
 =-\overline{\log\pi_\theta(a_t\mid s_t)A_t}
 -c_e\overline{\mathcal H}
-+c_v\operatorname{SmoothL1}\!\left(V_\phi(s_t),R_t^{\mathrm{target}}\right).
++c_v\mathrm{SmoothL1}\!\left(V_\phi(s_t),R_t^{\mathrm{target}}\right).
 ```
 
 dove:
